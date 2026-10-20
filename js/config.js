@@ -13,8 +13,8 @@ let accommodationsData = [];
 let recomendationsData = [];
 let rawExpenses = [];
 
-let traveler1 = localStorage.getItem('caba_lukitas_traveler1') || '';
-let traveler2 = localStorage.getItem('caba_lukitas_traveler2') || '';
+let traveler1 = localStorage.getItem('japon2_traveler1') || '';
+let traveler2 = localStorage.getItem('japon2_traveler2') || '';
 
 let currentModalEventObj = null;
 let editingAccommodation = null; // [CAMBIO 4] alojamiento que se está editando (o null)
