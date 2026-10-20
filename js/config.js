@@ -2,7 +2,7 @@
 // Configuración del viaje y estado global (URL del Apps Script, variables compartidas, subtes de la ciudad).
 // Es el primer archivo que se carga: los demás usan estas variables.
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDAXkKiPDce64EHfNoI4xcA8rmeipHRBJVzwTJ2XQhFJjMUEFSAju9sbaFi_R0qZuYFA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-4FwNlzBYgzqx59HByDFoTuIW_0VXU1OR0LyzMVJLzcYn1Pu48e8-MJBaJ2ytFpjT/exec";
 let ARS_USD_RATE = 1250;
 
 let START_DATE = null;
