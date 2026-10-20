@@ -3,12 +3,12 @@
 
 function ensureTravelerNames() {
     if (!traveler1 || !traveler2) {
-        let p1 = prompt("Ingresá el Nombre del Viajero 1:", traveler1 || "Lukitas");
-        let p2 = prompt("Ingresá el Nombre del Viajero 2:", traveler2 || "Acompañante");
+        let p1 = prompt("Ingresá el Nombre del Viajero 1:", traveler1 || "Sebas");
+        let p2 = prompt("Ingresá el Nombre del Viajero 2:", traveler2 || "Hil");
         traveler1 = p1 || "Lukitas";
         traveler2 = p2 || "Acompañante";
-        localStorage.setItem('caba_lukitas_traveler1', traveler1);
-        localStorage.setItem('caba_lukitas_traveler2', traveler2);
+        localStorage.setItem('japon2_traveler1', traveler1);
+        localStorage.setItem('japon2_traveler2', traveler2);
     }
     updateTravelerLabels();
 }
@@ -46,8 +46,8 @@ function updateTravelerLabels() {
     const lblP1 = document.getElementById('lbl-p1');
     const lblP2 = document.getElementById('lbl-p2');
 
-    const p1Name = traveler1 || "Lukitas";
-    const p2Name = traveler2 || "Acompañante";
+    const p1Name = traveler1 || "Sebas";
+    const p2Name = traveler2 || "Hil";
 
     if (selectPayer) {
         selectPayer.innerHTML = `
@@ -69,8 +69,8 @@ function updateTravelerLabels() {
 function resetTravelers() {
     const p1 = prompt("Nombre del Viajero 1:", traveler1 || "Lukitas");
     const p2 = prompt("Nombre del Viajero 2:", traveler2 || "Acompañante");
-    if (p1) { traveler1 = p1; localStorage.setItem('caba_lukitas_traveler1', p1); }
-    if (p2) { traveler2 = p2; localStorage.setItem('caba_lukitas_traveler2', p2); }
+      if (p1) { traveler1 = p1; localStorage.setItem('japon2_traveler1', p1); }
+      if (p2) { traveler2 = p2; localStorage.setItem('japon2_traveler2', p2); }
     updateTravelerLabels();
     loadExpensesFromSheet();
 }
