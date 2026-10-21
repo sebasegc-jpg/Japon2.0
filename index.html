@@ -142,7 +142,7 @@
             <div class="tab-inner-container">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
-                        <h3>Control de Gastos & Presupuesto (ARS / USD)</h3>
+                        <h3>Control de Gastos & Presupuesto (¥ / USD / ARS)</h3>
                         <p style="color: var(--text-muted); font-size: 0.85rem;">Cuentas claras del viaje entre Sebas e Hil.</p>
                     </div>
                     <button onclick="resetTravelers()" style="background:#f1f5f9; border:1px solid var(--border); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.8rem; font-weight:600;">
@@ -150,22 +150,31 @@
                     </button>
                 </div>
 
+                <!-- [CAMBIO 12] Conversor de 3 monedas -->
                 <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:1rem; border-radius:8px; margin-bottom:1.5rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
-                        <h4 style="color:#166534;"><i class="fa-solid fa-calculator"></i> Conversor Rápido (Pesos ARS ⇆ Dólar USD)</h4>
-                        <span id="rate-indicator" style="font-size:0.75rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-weight:bold;">1 USD = $1250 ARS</span>
+                        <h4 style="color:#166534;"><i class="fa-solid fa-calculator"></i> Conversor Rápido (Yenes ⇆ Dólares ⇆ Pesos)</h4>
+                        <span id="rate-indicator" style="font-size:0.75rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-weight:bold;">1 USD = ¥150 | 1 USD = $1250 ARS</span>
                     </div>
                     <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
                         <div style="flex:1; min-width:140px;">
-                            <label style="font-size:0.75rem; font-weight:bold; color:#166534;">Pesos Argentinos (ARS):</label>
-                            <input type="number" id="calc-ars" placeholder="$ 50000 ARS" oninput="convertCurrency('ars')" style="width:100%; padding:0.4rem; border:1px solid #86efac; border-radius:4px; font-weight:bold;">
+                            <label style="font-size:0.75rem; font-weight:bold; color:#166534;">Yenes (¥ JPY):</label>
+                            <input type="number" id="calc-jpy" placeholder="¥ 10000" oninput="convertCurrency('jpy')" style="width:100%; padding:0.4rem; border:1px solid #86efac; border-radius:4px; font-weight:bold;">
                         </div>
                         <div style="font-size:1.2rem; font-weight:bold; color:#166534; margin-top:12px;">⇆</div>
                         <div style="flex:1; min-width:140px;">
                             <label style="font-size:0.75rem; font-weight:bold; color:#166534;">Dólares (USD):</label>
-                            <input type="number" id="calc-usd" placeholder="$ 40 USD" oninput="convertCurrency('usd')" style="width:100%; padding:0.4rem; border:1px solid #86efac; border-radius:4px; font-weight:bold;">
+                            <input type="number" id="calc-usd" placeholder="US$ 65" oninput="convertCurrency('usd')" style="width:100%; padding:0.4rem; border:1px solid #86efac; border-radius:4px; font-weight:bold;">
+                        </div>
+                        <div style="font-size:1.2rem; font-weight:bold; color:#166534; margin-top:12px;">⇆</div>
+                        <div style="flex:1; min-width:140px;">
+                            <label style="font-size:0.75rem; font-weight:bold; color:#166534;">Pesos Argentinos (ARS):</label>
+                            <input type="number" id="calc-ars" placeholder="$ 80000 ARS" oninput="convertCurrency('ars')" style="width:100%; padding:0.4rem; border:1px solid #86efac; border-radius:4px; font-weight:bold;">
                         </div>
                     </div>
+                    <p style="font-size:0.7rem; color:#166534; margin-top:0.5rem;">
+                        Yen: <a href="https://www.exchangerate-api.com" target="_blank" style="color:#166534;">Rates By Exchange Rate API</a> · Peso: dólar blue (DolarApi)
+                    </p>
                 </div>
 
                 <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
@@ -187,13 +196,14 @@
                             <div class="form-group" style="flex:1;">
                                 <label>Moneda:</label>
                                 <select id="exp-currency">
+                                    <option value="JPY">Yenes (¥ JPY)</option>
+                                    <option value="USD">Dólares (US$ USD)</option>
                                     <option value="ARS">Pesos ($ ARS)</option>
-                                    <option value="USD">Dólares ($ USD)</option>
                                 </select>
                             </div>
                             <div class="form-group" style="flex:1.5;">
                                 <label>Monto Ingresado:</label>
-                                <input type="number" step="0.01" id="exp-amount" required placeholder="Ej: 15000">
+                                <input type="number" step="0.01" id="exp-amount" required placeholder="Ej: 3500">
                             </div>
                         </div>
 
@@ -215,9 +225,9 @@
                         <div class="form-group">
                             <label>Categoría:</label>
                             <select id="exp-category">
-                                <option value="Entradas">Entradas / Recitales / Shows</option>
-                                <option value="Transporte">Transporte / SUBE / Uber / Pasajes</option>
-                                <option value="Comida">Comida / Bodegones / Bares</option>
+                                <option value="Entradas">Entradas / Templos / Tours / Shows</option>
+                                <option value="Transporte">Transporte / Trenes / Suica / Taxi</option>
+                                <option value="Comida">Comida / Bebida / Konbini</option>
                                 <option value="Alojamiento">Alojamiento / Hotel</option>
                                 <option value="Compras">Compras / Manga / Ropa / Souvenirs</option>
                             </select>
@@ -226,26 +236,34 @@
                     </form>
 
                     <div style="background:#fff; padding:1.2rem; border-radius:8px; border:1px solid var(--border); width:340px; height:fit-content;">
-                        <h4 style="margin-bottom:0.8rem; color:var(--text-dark);">⚖ Balance & Cuentas Claras</h4>
+                        <!-- [CAMBIO 12] Título con desplegable de moneda -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
+                            <h4 style="color:var(--text-dark);">⚖ Balance & Cuentas Claras</h4>
+                            <select id="balance-currency" onchange="changeBalanceCurrency()" style="padding:0.25rem 0.4rem; border:1px solid var(--border); border-radius:4px; font-size:0.8rem; font-weight:600;">
+                                <option value="JPY">¥ Yenes</option>
+                                <option value="USD">US$ Dólares</option>
+                                <option value="ARS">$ Pesos</option>
+                            </select>
+                        </div>
 
                         <div style="margin-bottom:0.8rem; padding:0.8rem; background:#f0fdf4; border-radius:6px;">
                             <p id="lbl-p1" style="font-size:0.85rem; color:#166534; font-weight:bold;">Total Pagado por V1:</p>
-                            <h3 id="total-p1-usd">$0.00 USD ($0 ARS)</h3>
+                            <h3 id="total-p1-usd">¥0</h3>
                         </div>
 
                         <div style="margin-bottom:0.8rem; padding:0.8rem; background:#fef3c7; border-radius:6px;">
                             <p id="lbl-p2" style="font-size:0.85rem; color:#92400e; font-weight:bold;">Total Pagado por V2:</p>
-                            <h3 id="total-p2-usd">$0.00 USD ($0 ARS)</h3>
+                            <h3 id="total-p2-usd">¥0</h3>
                         </div>
 
                         <div id="settlement-box" style="margin-bottom:0.8rem; padding:0.8rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px;">
                             <p style="font-size:0.8rem; color:#1e40af; font-weight:bold;">🤝 Ajuste de Deudas:</p>
-                            <p id="settlement-text" style="font-size:0.9rem; font-weight:bold; color:#1d4ed8; margin-top:4px;">Cuentas saldadas (0 ARS)</p>
+                            <p id="settlement-text" style="font-size:0.9rem; font-weight:bold; color:#1d4ed8; margin-top:4px;">Cuentas saldadas</p>
                         </div>
 
                         <div style="padding:0.8rem; background:#f1f5f9; border-radius:6px;">
                             <p style="font-size:0.85rem; color:var(--text-muted); font-weight:bold;">Total Acumulado del Viaje:</p>
-                            <h3 id="total-trip-usd">$0.00 USD</h3>
+                            <h3 id="total-trip-usd">¥0</h3>
                         </div>
                     </div>
                 </div>
@@ -258,15 +276,16 @@
                             <tr>
                                 <th>Fecha</th>
                                 <th>Concepto</th>
-                                <th>Monto ARS</th>
+                                <th>Monto ¥</th>
                                 <th>Monto USD</th>
+                                <th>Monto ARS</th>
                                 <th>Pagó</th>
                                 <th>Categoría</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="expense-table-body">
-                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Cargando gastos...</td></tr>
+                            <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando gastos...</td></tr>
                         </tbody>
                     </table>
                 </div>
