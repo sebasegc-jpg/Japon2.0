@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lukitas va a la gran ciudad - CABA & Recitales</title>
+   <title>Japon SH - Viaje a Japón</title>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,11 +19,11 @@
     <header>
         <div class="header-content">
              <div class="logo">
-             <i class="fa-solid fa-city"></i> Lukitas va a la gran ciudad
+             <i class="fa-solid fa-torii-gate"></i> Japon SH <i class="fa-solid fa-mountain-sun"></i>
             </div>
 
             <div class="external-links">
-                <a href="https://docs.google.com/spreadsheets/d/1IpVyZts6sthWAEfBHqCcXdzCI3f7uwwEkFwrkRdHyVE/edit" target="_blank" class="ext-btn"><i class="fa-solid fa-table"></i> Google Sheet</a>
+                <a href="https://docs.google.com/spreadsheets/d/1J91d6zmDAMIcn2U3kDvZJ2BN8N0CteDw1azwSQ3AWFw/edit" target="_blank" class="ext-btn"><i class="fa-solid fa-table"></i> Google Sheet</a>
             </div>
         </div>
         <nav class="nav-tabs">
@@ -46,7 +46,7 @@
             <div class="tab-inner-container">
                 <div class="schedule-controls">
                     <div>
-                        <h3>Distribución Horaria en CABA</h3>
+                        <h3>Distribución Horaria del Viaje</h3>
                         <div class="week-selector" id="week-selector-container" style="margin-top:0.5rem;">
                             <span style="font-size:0.85rem; font-weight:600;">Semana:</span>
                         </div>
@@ -79,8 +79,8 @@
             <div class="tab-inner-container">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom:0.8rem;">
                     <div>
-                        <h3>Mapa, Subtes y Cronología en CABA</h3>
-                        <p style="color: var(--text-muted); font-size:0.85rem;">Puntos del itinerario, alojamientos, trazado de subtes y cálculo de rutas.</p>
+                     <h3>Mapa y Cronología del Viaje</h3>
+                        <p style="color: var(--text-muted); font-size:0.85rem;">Puntos del itinerario, alojamientos y cálculo de rutas.</p>
                     </div>
                     <div class="zone-filters" style="margin-bottom:0;">
                         <button class="filter-btn active" onclick="filterMapMarkers('all', event)">🗺️ Ver Todo</button>
@@ -143,7 +143,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
                         <h3>Control de Gastos & Presupuesto (ARS / USD)</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Cuentas claras del viaje entre Lukitas y su acompañante.</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Cuentas claras del viaje entre Sebas e Hil.</p>
                     </div>
                     <button onclick="resetTravelers()" style="background:#f1f5f9; border:1px solid var(--border); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.8rem; font-weight:600;">
                         👤 Cambiar Nombres de Viajeros
@@ -180,7 +180,7 @@
                         </div>
                         <div class="form-group">
                             <label>Concepto / Detalle:</label>
-                            <input type="text" id="exp-concept" required placeholder="Ej: Entradas Recital / Hotel / Cena Bodegón / SUBE">
+                            <input type="text" id="exp-concept" required placeholder="Ej: Templo Senso-ji / Ramen Ichiran / Paseo Shibuya">
                         </div>
 
                         <div style="display: flex; gap: 0.5rem;">
@@ -298,7 +298,7 @@
 
                 <div class="form-group">
                     <label>Título de la actividad / lugar</label>
-                    <input type="text" id="ev-title" required placeholder="Ej: Recital / Bodegón El Cuartito / Paseo Palermo">
+                    <input type="text" id="ev-title" required placeholder="Ej: Recital / Festival / Parque">
                 </div>
 
                 <div style="display: flex; gap: 0.5rem;">
@@ -341,7 +341,7 @@
 
                 <div class="form-group" id="booking-code-group">
                     <label>Código de Reserva / Entrada / Ticket (Opcional)</label>
-                    <input type="text" id="ev-booking-code" placeholder="Ej: Entrada #9283 / Sector Campo">
+                    <input type="text" id="ev-booking-code" placeholder="Ej: Reserva JR #9283 / Asiento 12A">
                 </div>
 
                 <!-- SELECCIÓN DINÁMICA DE LUGAR PARA EVENTOS NORMALES -->
@@ -393,7 +393,7 @@
                 </div>
                 <div class="form-group">
                     <label>Detalles / Recomendaciones / Colectivos</label>
-                    <textarea id="ev-details" rows="3" placeholder="Ej: Apertura de puertas 18:00. Tomar colectivo 42 o Subte D."></textarea>
+                    <textarea id="ev-details" rows="3" placeholder="Ej: Abre 9:00. Tomar JR Yamanote hasta Ueno."></textarea>
                 </div>
                 <button type="submit" class="btn-add-event" style="width: 100%; justify-content: center;">Guardar Evento</button>
             </form>
@@ -411,7 +411,7 @@
                 <input type="hidden" id="rec-old-title" value=""><!-- [CAMBIO 10] título original al editar -->
                 <div class="form-group">
                     <label>Título / Nombre del Lugar:</label>
-                    <input type="text" id="rec-title" required placeholder="Ej: Bodegón Don Julio / Fito Páez en Movistar Arena">
+                    <input type="text" id="rec-title" required placeholder="Ej: Ichiran Shibuya / TeamLab Planets">
                 </div>
                 <div class="form-group">
                     <label>Tipo:</label>
@@ -428,7 +428,7 @@
                 </div>
                 <div class="form-group">
                     <label>Ubicación / Dirección:</label>
-                    <input type="text" id="rec-location" placeholder="Ej: Palermo / Corrientes 1234">
+                    <input type="text" id="rec-location" placeholder="Ej: Shibuya / Asakusa">
                 </div>
                 <div class="form-group">
                     <label>Link Google Maps (Opcional):</label>
@@ -436,7 +436,7 @@
                 </div>
                 <div class="form-group">
                     <label>Detalles / Notas:</label>
-                    <textarea id="rec-details" rows="3" placeholder="Ej: Probar la milanesa napolitana. Ir temprano."></textarea>
+                    <textarea id="rec-details" rows="3" placeholder="Ej: Probar el ramen tonkotsu. Ir temprano."></textarea>
                 </div>
                 <button type="submit" class="btn-add-event" style="width: 100%; justify-content: center;">Guardar Recomendación</button>
             </form>
