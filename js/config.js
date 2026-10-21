@@ -4,6 +4,8 @@
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-4FwNlzBYgzqx59HByDFoTuIW_0VXU1OR0LyzMVJLzcYn1Pu48e8-MJBaJ2ytFpjT/exec";
 let ARS_USD_RATE = 1250;
+let JPY_USD_RATE = 150;         // [CAMBIO 12] yenes por dólar (se actualiza en vivo)
+let balanceCurrency = localStorage.getItem('japon2_balance_currency') || 'JPY'; // [CAMBIO 12] moneda del balance
 
 let START_DATE = null;
 let currentWeek = 1;
