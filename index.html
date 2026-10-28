@@ -88,19 +88,10 @@
                         <button class="filter-btn" onclick="filterMapMarkers('itinerario', event)">📅 Itinerario</button>
                         <button class="filter-btn" onclick="filterMapMarkers('recom', event)">💡 Recomendaciones</button>
                         <!-- [CAMBIO 9] Prende/apaga las líneas de los trayectos -->
-                        <button class="filter-btn trip-toggle" onclick="toggleTripLines(event)">〰️ Trayectos</button>
+                                               <button class="filter-btn trip-toggle" onclick="toggleTripLines(event)">〰️ Trayectos</button>
+                        <!-- [CAMBIO 13] Prende/apaga la red Shinkansen -->
+                        <button class="filter-btn trip-toggle" onclick="toggleShinkansen(event)">🚄 Shinkansen</button>
                     </div>
-                </div>
-
-                <div class="subway-guide">
-                    <h4 style="color:#1e40af; margin-bottom:0.4rem;"><i class="fa-solid fa-train-subway"></i> Red de Subtes Trazada en el Mapa</h4>
-                    <p style="font-size:0.8rem; color:#334155;">
-                        <span class="subway-line line-A">Línea A</span> Plaza de Mayo ⇆ San Pedrito |
-                        <span class="subway-line line-B">Línea B</span> Leandro N. Alem ⇆ J.M. de Rosas |
-                        <span class="subway-line line-C">Línea C</span> Retiro ⇆ Constitución |
-                        <span class="subway-line line-D">Línea D</span> Catedral ⇆ Congreso de Tucumán |
-                        <span class="subway-line line-H">Línea H</span> Hospitales ⇆ Facultad de Derecho
-                    </p>
                 </div>
 
                 <!-- [CAMBIO 8] Aviso de lugares sin coordenadas (reemplaza la búsqueda por nombre) -->
