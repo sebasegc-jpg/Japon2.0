@@ -71,7 +71,8 @@ function initLeafletMap() {
     }).addTo(leafletMap);
 
     // [CAMBIO 13] Ya no se dibujan subtes. La capa Shinkansen se prende con su botón.
-    renderMapMarkers();
+     renderMapMarkers();
+    fitMapToMarkers(); // [CAMBIO 14] encuadra el mapa en los pines
     if (showShinkansen) drawShinkansen();
 }
 
@@ -265,4 +266,14 @@ function toggleShinkansen(evt) {
     if (evt && evt.currentTarget) evt.currentTarget.classList.toggle('active', showShinkansen);
     if (showShinkansen) drawShinkansen();
     else clearShinkansen();
+}
+
+// [CAMBIO 14] Encuadra el mapa para que entren todos los pines.
+// Si no hay pines, queda la vista de Japón. maxZoom evita acercarse demasiado si hay un solo pin.
+function fitMapToMarkers() {
+    if (!leafletMap || mapMarkers.length === 0) return;
+    const bounds = L.featureGroup(mapMarkers).getBounds();
+    if (bounds.isValid()) {
+        leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    }
 }
