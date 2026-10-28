@@ -1,5 +1,5 @@
 // ===== mapa.js =====
-// Pestaña Mapa: Leaflet, pines, trayectos, filtros y cronología del viaje.
+// Pestaña Mapa: Leaflet, pines, trayectos, filtros, capa Shinkansen y cronología del viaje.
 
 function renderTimeline() {
     const container = document.getElementById('timeline-list');
@@ -62,29 +62,17 @@ function renderTimeline() {
 function initLeafletMap() {
     if (leafletMap) return;
 
-    leafletMap = L.map('leaflet-map').setView([-34.6037, -58.4100], 12);
+    // [CAMBIO 13] El mapa arranca mostrando Japón (antes: Buenos Aires)
+    leafletMap = L.map('leaflet-map').setView([36.2, 138.25], 6);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri'
     }).addTo(leafletMap);
 
-    // DIBUJAR LÍNEAS DE SUBTE
-    for (let lineKey in SUBWAY_LINES) {
-        let line = SUBWAY_LINES[lineKey];
-        let poly = L.polyline(line.coords, { color: line.color, weight: 4, opacity: 0.8 }).addTo(leafletMap);
-        poly.bindPopup(`<b>${lineKey}</b>`);
-        mapSubwayLayers.push(poly);
-    }
-
-    // MARCADORES NODALES DE SUBTE
-    SUBWAY_NODES.forEach(node => {
-        let nodeMarker = L.circleMarker(node.coords, { radius: 5, fillColor: "#1e293b", color: "#ffffff", weight: 2, fillOpacity: 0.9 }).addTo(leafletMap);
-        nodeMarker.bindPopup(`<b>🚇 Estación / Nodo Subte:</b> ${node.name}`);
-        mapSubwayLayers.push(nodeMarker);
-    });
-
+    // [CAMBIO 13] Ya no se dibujan subtes. La capa Shinkansen se prende con su botón.
     renderMapMarkers();
+    if (showShinkansen) drawShinkansen();
 }
 
 // [CAMBIO 8] Lee coordenadas "lat,lng". Ya NO busca por nombre en Nominatim:
@@ -225,7 +213,7 @@ function renderMapMarkers(categoryFilter = currentMapFilter) {
 
 function filterMapMarkers(cat, evt) {
     if (!leafletMap) initLeafletMap();
-    // [CAMBIO 9] el botón Trayectos no se apaga al cambiar de filtro
+    // [CAMBIO 9] los botones Trayectos y Shinkansen no se apagan al cambiar de filtro
     document.querySelectorAll('.zone-filters .filter-btn:not(.trip-toggle)').forEach(btn => btn.classList.remove('active'));
     if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
     currentMapFilter = cat;
@@ -238,4 +226,43 @@ function toggleTripLines(evt) {
     showTripLines = !showTripLines;
     if (evt && evt.currentTarget) evt.currentTarget.classList.toggle('active', showTripLines);
     renderMapMarkers();
+}
+
+// ===== [CAMBIO 13] CAPA SHINKANSEN =====
+// Va aparte de los pines: los filtros (Alojamientos, Itinerario...) no la apagan.
+
+function drawShinkansen() {
+    clearShinkansen();
+    const drawnStations = new Set(); // para no dibujar dos veces las estaciones compartidas
+
+    for (const name in SHINKANSEN_LINES) {
+        const line = SHINKANSEN_LINES[name];
+        const coords = line.stations.map(s => [s[1], s[2]]);
+
+        const poly = L.polyline(coords, { color: line.color, weight: 5, opacity: 0.75 }).addTo(leafletMap);
+        poly.bindPopup(`<b>🚄 Shinkansen ${name}</b><br>${line.route}`);
+        shinkansenLayers.push(poly);
+
+        line.stations.forEach(s => {
+            if (drawnStations.has(s[0])) return;
+            drawnStations.add(s[0]);
+            const dot = L.circleMarker([s[1], s[2]], { radius: 4, fillColor: '#ffffff', color: '#1e293b', weight: 2, fillOpacity: 1 }).addTo(leafletMap);
+            dot.bindPopup(`<b>🚉 ${s[0]}</b>`);
+            shinkansenLayers.push(dot);
+        });
+    }
+}
+
+function clearShinkansen() {
+    if (!leafletMap) return;
+    shinkansenLayers.forEach(layer => leafletMap.removeLayer(layer));
+    shinkansenLayers = [];
+}
+
+function toggleShinkansen(evt) {
+    if (!leafletMap) initLeafletMap();
+    showShinkansen = !showShinkansen;
+    if (evt && evt.currentTarget) evt.currentTarget.classList.toggle('active', showShinkansen);
+    if (showShinkansen) drawShinkansen();
+    else clearShinkansen();
 }
