@@ -211,7 +211,8 @@ function getHotelForDate(dateStr) {
 
 function getHotelRouteUrl(destAddressOrCoords, targetDateStr) {
     let hotel = getHotelForDate(targetDateStr);
-    let origin = (hotel && hotel.coords) ? hotel.coords : (hotel ? (hotel.mapUrl || hotel.name) : 'Buenos Aires');
-    let destination = destAddressOrCoords || 'Buenos Aires';
+       // [CAMBIO 14] Sin hotel: origen vacío = Google Maps usa tu ubicación actual (antes: Buenos Aires)
+    let origin = (hotel && hotel.coords) ? hotel.coords : (hotel ? (hotel.mapUrl || hotel.name) : '');
+    let destination = destAddressOrCoords || '';
     return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=transit`;
 }
