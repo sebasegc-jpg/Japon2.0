@@ -1,5 +1,8 @@
 // ===== recomendaciones.js =====
 // Recomendaciones: lista, agregar, editar, eliminar y pasar al itinerario.
+// [CAMBIO 16] Editar y borrar usan la columna ID (fila exacta, aunque haya títulos repetidos).
+
+let editingRecomID = ''; // [CAMBIO 16] ID de la recomendación que se está editando ('' = nueva)
 
 async function loadRecomendacionesFromSheet() {
     const container = document.getElementById('recom-container');
@@ -66,6 +69,7 @@ function openAddRecomModal() {
     // [CAMBIO 10] Formulario limpio en modo "agregar"
     document.getElementById('recomForm').reset();
     document.getElementById('rec-old-title').value = '';
+    editingRecomID = ''; // [CAMBIO 16]
     document.getElementById('recomModalTitle').innerText = '➕ Agregar Nueva Recomendación / Lugar';
     document.getElementById('recomModal').style.display = 'flex';
 }
@@ -79,6 +83,7 @@ function editRecom(idx) {
     document.getElementById('recomForm').reset();
     document.getElementById('recomModalTitle').innerText = '✏️ Editar Recomendación';
     document.getElementById('rec-old-title').value = title;
+    editingRecomID = rec.ID || ''; // [CAMBIO 16]
     document.getElementById('rec-title').value = title;
 
     // Si el tipo guardado no está en la lista, se agrega para no perderlo
@@ -109,7 +114,8 @@ async function deleteRecom(idx) {
     try {
         const res = await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'delete', sheet: 'Recomendaciones', title: title })
+            // [CAMBIO 16] Con ID borra exactamente esta fila; el título queda de respaldo
+            body: JSON.stringify({ action: 'delete', sheet: 'Recomendaciones', ID: rec.ID || '', title: title })
         });
         const msg = await res.text();
         if (msg.startsWith('Error')) throw new Error(msg);
@@ -125,6 +131,7 @@ async function saveRecomForm(e) {
     e.preventDefault();
     const recomData = {
         sheet: 'Recomendaciones',
+        ID: editingRecomID, // [CAMBIO 16] '' = nueva; con ID = edita esa fila exacta
         Titulo: document.getElementById('rec-title').value,
         Tipo: document.getElementById('rec-type').value,
         FechaTentativa: formatDateStandard(document.getElementById('rec-date').value),
@@ -148,6 +155,7 @@ async function saveRecomForm(e) {
         closeModal('recomModal');
         document.getElementById('recomForm').reset();
         document.getElementById('rec-old-title').value = '';
+        editingRecomID = ''; // [CAMBIO 16]
     } catch (err) {
         alert('No se pudo guardar la recomendación: ' + err.message);
     } finally {
