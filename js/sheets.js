@@ -1,5 +1,6 @@
 // ===== sheets.js =====
 // Lectura de datos desde Google Sheets (alojamientos e itinerario) y recarga completa.
+// [CAMBIO 16] Cada alojamiento y evento guarda su ID (columna ID del Sheet).
 
 async function loadAccommodationsFromSheet() {
     try {
@@ -7,6 +8,7 @@ async function loadAccommodationsFromSheet() {
         const data = await res.json();
         if (Array.isArray(data)) {
             accommodationsData = data.map(r => {
+                const id = String(r.ID || '').trim(); // [CAMBIO 16]
                 const name = r.Nombre || r.title || '';
                 const start = r.FechaInicio || r.CheckIn || '';
                 const end = r.FechaFin || r.CheckOut || '';
@@ -19,7 +21,7 @@ async function loadAccommodationsFromSheet() {
                 const checkInHour = parseHourCell(r.CheckIn);
                 const checkOutHour = parseHourCell(r.CheckOut);
                 const detalles = r.Detalles || '';
-                return { name, start, end, mapUrl, coords, direccion, city, bookingLink, checkInHour, checkOutHour, detalles };
+                return { id, name, start, end, mapUrl, coords, direccion, city, bookingLink, checkInHour, checkOutHour, detalles };
             }).filter(a => a.name !== '');
         }
     } catch (e) {
@@ -34,6 +36,7 @@ async function loadEventsFromSheet() {
 
         if (Array.isArray(data)) {
             localEvents = data.map(row => {
+                const id = String(row.ID || '').trim(); // [CAMBIO 16]
                 const title = row.Titulo || row.title || '';
                 const date = row.FechaInicio || row.Dia || '';
                 const rawStart = row.HoraInicio;
@@ -53,7 +56,7 @@ async function loadEventsFromSheet() {
 
                 const medio = String(row.Medio || '').trim(); // [CAMBIO 7]
 
-                return { title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio };
+                return { id, title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio };
             }).filter(e => e.title !== '');
         }
     } catch (error) {
