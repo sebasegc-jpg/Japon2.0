@@ -1,5 +1,30 @@
 // ===== itinerario.js =====
 // Pestaña Itinerario: semanas, grilla horaria, detalle de eventos, formulario y guardado.
+// [CAMBIO 16] Eventos y alojamientos se buscan, editan y borran por su ID.
+
+let editingEventID = ''; // [CAMBIO 16] ID del evento que se está editando ('' = nuevo)
+
+// [CAMBIO 16] Busca un evento. Con un solo dato es un ID; con tres, es la forma vieja (título, fecha, hora).
+function findEvent(key, date, startHour) {
+    if (date === undefined) {
+        return localEvents.find(e => e.id && e.id === key) || null;
+    }
+    return localEvents.find(e => e.title === key && e.date === date &&
+        (startHour === undefined || e.startHour === startHour)) || null;
+}
+
+// [CAMBIO 16] Busca un alojamiento por ID (o por nombre, como respaldo)
+function findAccommodation(key) {
+    return accommodationsData.find(a => a.id && a.id === key) ||
+           accommodationsData.find(a => a.name === key) || null;
+}
+
+// [CAMBIO 16] Texto que va dentro de los onclick para identificar un evento:
+// el ID si lo tiene; si no, título + fecha + hora (forma vieja).
+function eventKeyArgs(ev) {
+    if (ev.id) return `'${String(ev.id).replace(/'/g, "\\'")}'`;
+    return `'${String(ev.title).replace(/'/g, "\\'")}', '${ev.date}', ${ev.startHour}`;
+}
 
 function calculateDuration() {
     const startDateVal = document.getElementById('ev-date').value;
@@ -195,8 +220,8 @@ function renderHeaderDays() {
 
         let stayHTML = '<div class="day-stay">Sin asignar</div>';
         if (acc) {
-            const safeName = acc.name.replace(/'/g, "\\'");
-            stayHTML = `<div class="day-stay" onclick="showModalByTitle('${safeName}')">🏨 ${acc.name}</div>`;
+            const safeKey = String(acc.id || acc.name).replace(/'/g, "\\'"); // [CAMBIO 16]
+            stayHTML = `<div class="day-stay" onclick="showModalByTitle('${safeKey}')">🏨 ${acc.name}</div>`;
         }
 
         html += `<th><div class="day-header"><div class="day-date">${formattedDate}</div>${stayHTML}</div></th>`;
@@ -217,12 +242,11 @@ function renderPendingEvents(pendingEvents) {
 
     container.style.display = 'block';
     list.innerHTML = pendingEvents.map(ev => {
-        const safeTitle = ev.title.replace(/'/g, "\\'");
         return `
             <div class="pending-card">
                 <div class="pending-title">📍 ${ev.title}</div>
                 <div class="pending-meta">Fecha: ${ev.date || 'Sin fecha'} | Hora: Pendiente</div>
-                <button class="pending-btn" onclick="editPendingEvent('${safeTitle}', '${ev.date}')">
+                <button class="pending-btn" onclick="editPendingEvent(${eventKeyArgs(ev)})">
                     ✏️ Asignar Hora / Editar
                 </button>
             </div>
@@ -230,8 +254,9 @@ function renderPendingEvents(pendingEvents) {
     }).join('');
 }
 
-function editPendingEvent(title, date) {
-    const ev = localEvents.find(e => e.title === title && e.date === date);
+// [CAMBIO 16] Recibe el ID (o la forma vieja: título, fecha, hora)
+function editPendingEvent(key, date, startHour) {
+    const ev = findEvent(key, date, startHour);
     if (!ev) return;
     currentModalEventObj = ev;
     editEventModal();
@@ -288,11 +313,10 @@ function buildGrid(events = []) {
                 let visualSpan = Math.min(rawDuration, 24 - hour);
 
                 let locText = evStart.type === 'transporte' ? 'Traslado / Vuelo' : (evStart.location || '');
-                let safeTitle = evStart.title.replace(/'/g, "\\'");
                 let icon = getEventIcon(evStart); // [CAMBIO 7]
 
                 rowHTML += `<td rowspan="${visualSpan}" style="padding:1px; vertical-align:top; height:${visualSpan * 38}px;">
-                    <div class="event-block event-${evStart.type || 'actividad'}" onclick="showModalByObject('${safeTitle}', '${evStart.date}', ${evStart.startHour})">
+                    <div class="event-block event-${evStart.type || 'actividad'}" onclick="showModalByObject(${eventKeyArgs(evStart)})">
                         <div class="event-title-line">${icon} ${evStart.title}</div>
                         <div class="event-subtitle-line">${rawDuration}h totales ${locText ? '| ' + locText : ''}</div>
                     </div>
@@ -308,9 +332,11 @@ function buildGrid(events = []) {
     }
 }
 
-function showModalByTitle(title) {
-    let acc = accommodationsData.find(a => a.name === title);
+// [CAMBIO 16] Recibe el ID del alojamiento (o el nombre, como respaldo)
+function showModalByTitle(key) {
+    let acc = findAccommodation(key);
     if (acc) {
+        const safeKey = String(acc.id || acc.name).replace(/'/g, "\\'");
         let mapsUrl = acc.coords ? `https://www.google.com/maps/search/?api=1&query=${acc.coords}` : (acc.mapUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(acc.name));
         document.getElementById('modalTitle').innerText = acc.name;
         document.getElementById('modalBody').innerHTML = `
@@ -322,7 +348,7 @@ function showModalByTitle(title) {
                 </a>
             </div>
             <div style="margin-top:15px;">
-                <button onclick="editAccommodationModal('${acc.name.replace(/'/g, "\\'")}')" style="background:#0284c7; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                <button onclick="editAccommodationModal('${safeKey}')" style="background:#0284c7; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
                     ✏️ Editar Alojamiento
                 </button>
             </div>
@@ -332,10 +358,12 @@ function showModalByTitle(title) {
 }
 
 // [CAMBIO 4] Abre el formulario de edición cargado con los datos del alojamiento
-function editAccommodationModal(name) {
-    const acc = accommodationsData.find(a => a.name === name);
+// [CAMBIO 16] Recibe el ID (o el nombre, como respaldo)
+function editAccommodationModal(key) {
+    const acc = findAccommodation(key);
     if (!acc) return;
     editingAccommodation = acc;
+    editingEventID = ''; // [CAMBIO 16] no se está editando un evento del itinerario
 
     populateLocationSelects();
     closeModal('eventModal');
@@ -366,8 +394,9 @@ function editAccommodationModal(name) {
     document.getElementById('addModal').style.display = 'flex';
 }
 
-function showModalByObject(title, date, startHour) {
-    const ev = localEvents.find(e => e.title === title && e.date === date && e.startHour === startHour);
+// [CAMBIO 16] Recibe el ID (o la forma vieja: título, fecha, hora)
+function showModalByObject(key, date, startHour) {
+    const ev = findEvent(key, date, startHour);
     if (!ev) return;
 
     currentModalEventObj = ev;
@@ -464,7 +493,7 @@ function showModalByObject(title, date, startHour) {
             <button onclick="editEventModal()" style="background:#0284c7; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
                 ✏️ Editar Evento
             </button>
-            <button onclick="deleteEvent('${ev.title.replace(/'/g, "\\'")}', '${ev.date}')" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+            <button onclick="deleteEvent(${eventKeyArgs(ev)})" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
                 🗑 Eliminar Evento
             </button>
         </div>
@@ -476,6 +505,7 @@ function showModalByObject(title, date, startHour) {
 function openAddModal() {
     populateLocationSelects();
     editingAccommodation = null; // [CAMBIO 4]
+    editingEventID = '';         // [CAMBIO 16] evento nuevo
     document.getElementById('ev-type').disabled = false; // [CAMBIO 4]
     document.getElementById('modalFormHeaderTitle').innerText = "Añadir Nueva Actividad";
     document.getElementById('addEventForm').reset();
@@ -491,6 +521,7 @@ function editEventModal() {
 
     populateLocationSelects();
     editingAccommodation = null; // [CAMBIO 4]
+    editingEventID = ev.id || ''; // [CAMBIO 16]
     document.getElementById('ev-type').disabled = false; // [CAMBIO 4]
     closeModal('eventModal');
     document.getElementById('modalFormHeaderTitle').innerText = "Editar Actividad / Evento";
@@ -536,6 +567,15 @@ async function saveEvent(e) {
         targetSheet = "Alojamiento";
     }
 
+    // [CAMBIO 16] ID de lo que se edita: alojamiento o evento ('' = nuevo).
+    // Si un evento cambia a tipo Alojamiento, va a otra pestaña: se guarda como alojamiento nuevo.
+    let recordID = '';
+    if (type === 'sleep') {
+        recordID = editingAccommodation ? (editingAccommodation.id || '') : '';
+    } else if (!editingAccommodation) {
+        recordID = editingEventID;
+    }
+
     let startDateVal = document.getElementById('ev-date').value;
     let endDateVal = document.getElementById('ev-end-date').value || startDateVal;
 
@@ -549,6 +589,7 @@ async function saveEvent(e) {
 
     const newEv = {
         sheet: targetSheet,
+        ID: recordID, // [CAMBIO 16]
         Titulo: document.getElementById('ev-title').value,
         Tipo: type,
         FechaInicio: formattedStartDate,
@@ -569,7 +610,8 @@ async function saveEvent(e) {
     if (type === 'sleep') {
         newEv.Nombre = newEv.Titulo;
         // [CAMBIO 4] Si se edita un alojamiento, se conserva su ciudad
-        newEv.Ciudad = (editingAccommodation && editingAccommodation.city) ? editingAccommodation.city : 'CABA';
+        // [CAMBIO 16] Alojamiento nuevo: Ciudad vacía (antes decía 'CABA')
+        newEv.Ciudad = (editingAccommodation && editingAccommodation.city) ? editingAccommodation.city : '';
         newEv.CheckIn = newEv.HoraInicio;
         newEv.CheckOut = newEv.HoraFin;
         newEv.LinkReserva = newEv.CodigoReserva;
@@ -608,6 +650,7 @@ async function saveEvent(e) {
         closeModal('addModal');
         document.getElementById('addEventForm').reset();
         editingAccommodation = null; // [CAMBIO 4]
+        editingEventID = '';         // [CAMBIO 16]
         document.getElementById('ev-type').disabled = false; // [CAMBIO 4]
     } catch (err) {
         alert('No se pudo guardar el evento: ' + err.message);
@@ -619,10 +662,13 @@ async function saveEvent(e) {
     }
 }
 
-async function deleteEvent(title, start) {
-    if (!confirm(`¿Estás seguro de que deseas eliminar "${title}"?`)) return;
+// [CAMBIO 16] Recibe el ID (o la forma vieja: título, fecha, hora)
+async function deleteEvent(key, date, startHour) {
+    const ev = findEvent(key, date, startHour);
+    if (!ev) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${ev.title}"?`)) return;
 
-    localEvents = localEvents.filter(e => !(e.title === title && e.date === start));
+    localEvents = localEvents.filter(e => e !== ev);
     autoDetectTripBounds();
     renderHeaderDays();
     buildGrid(localEvents);
@@ -634,8 +680,9 @@ async function deleteEvent(title, start) {
             body: JSON.stringify({
                 action: 'delete',
                 sheet: 'Itinerario',
-                title: title,
-                date: start
+                ID: ev.id || '',   // [CAMBIO 16] borra exactamente esta fila
+                title: ev.title,   // respaldo si no tuviera ID
+                date: ev.date
             })
         });
     } catch (err) {
