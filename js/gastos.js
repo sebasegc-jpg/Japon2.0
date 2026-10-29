@@ -3,9 +3,12 @@
 // [CAMBIO 12] Tres monedas: cada gasto guarda Monto_JPY, Monto_Dlr y Monto_ARS
 // (convertidos con la cotización del día en que se cargó) y la Moneda original.
 // El balance se muestra en la moneda elegida en el desplegable.
+// [CAMBIO 16] Editar y borrar usan la columna ID (fila exacta, aunque haya conceptos repetidos).
 
 const CURRENCIES = ['JPY', 'USD', 'ARS'];
 const SHEET_COL = { JPY: 'Monto_JPY', USD: 'Monto_Dlr', ARS: 'Monto_ARS' };
+
+let editingExpenseID = ''; // [CAMBIO 16] ID del gasto que se está editando ('' = gasto nuevo)
 
 function p1Default() { return traveler1 || "Sebas"; }
 function p2Default() { return traveler2 || "Hil"; }
@@ -215,8 +218,7 @@ function renderExpenses() {
                 return c === orig ? `<b>${txt}</b>` : txt;
             };
 
-            const safeConcept = String(exp.Concepto || '').replace(/'/g, "\\'");
-            const safeDate = String(exp.Fecha || '').replace(/'/g, "\\'");
+            const safeID = String(exp.ID || '').replace(/'/g, "\\'"); // [CAMBIO 16]
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -228,8 +230,8 @@ function renderExpenses() {
                 <td>${payer}<br><span style="font-size:0.72rem; color:var(--text-muted);">${splitLabel}</span></td>
                 <td>${exp.Categoria || ''}</td>
                 <td>
-                    <button onclick="editExpenseRow('${safeConcept}', '${safeDate}')" style="background:#0284c7; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-weight:bold;">✏️</button>
-                    <button onclick="deleteExpenseRow('${safeConcept}', '${safeDate}')" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-weight:bold;">🗑</button>
+                    <button onclick="editExpenseRow('${safeID}')" style="background:#0284c7; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-weight:bold;">✏️</button>
+                    <button onclick="deleteExpenseRow('${safeID}')" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-weight:bold;">🗑</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -257,10 +259,18 @@ function renderExpenses() {
 }
 
 // ---------- Editar, borrar y guardar ----------
-function editExpenseRow(concept, date) {
-    const exp = rawExpenses.find(e => String(e.Concepto) === concept && String(e.Fecha) === date);
+
+// [CAMBIO 16] Busca el gasto por su ID
+function findExpenseByID(id) {
+    return rawExpenses.find(e => String(e.ID || '') === String(id)) || null;
+}
+
+function editExpenseRow(id) {
+    const exp = findExpenseByID(id);
     if (!exp) return;
 
+    editingExpenseID = exp.ID || ''; // [CAMBIO 16]
+    // Se siguen completando por compatibilidad (si el gasto no tuviera ID)
     document.getElementById('exp-old-concept').value = exp.Concepto;
     document.getElementById('exp-old-date').value = exp.Fecha;
 
@@ -278,8 +288,10 @@ function editExpenseRow(concept, date) {
     document.getElementById('expense-form-title').innerText = "✏️ Editar Gasto";
 }
 
-async function deleteExpenseRow(concept, date) {
-    if (!confirm(`¿Estás seguro de eliminar el gasto "${concept}"?`)) return;
+async function deleteExpenseRow(id) {
+    const exp = findExpenseByID(id);
+    if (!exp) return;
+    if (!confirm(`¿Estás seguro de eliminar el gasto "${exp.Concepto}"?`)) return;
 
     try {
         await fetch(SCRIPT_URL, {
@@ -287,8 +299,9 @@ async function deleteExpenseRow(concept, date) {
             body: JSON.stringify({
                 action: 'delete',
                 sheet: 'Gastos',
-                title: concept,
-                date: date
+                ID: exp.ID || '',        // [CAMBIO 16] borra exactamente esta fila
+                title: exp.Concepto,     // respaldo si no tuviera ID
+                date: exp.Fecha
             })
         });
         loadExpensesFromSheet();
@@ -316,6 +329,7 @@ function saveExpenseForm(e) {
 
     const expenseData = {
         sheet: 'Gastos',
+        ID: editingExpenseID,    // [CAMBIO 16] '' = gasto nuevo; con ID = edita esa fila exacta
         Fecha: formatDateStandard(document.getElementById('exp-date').value),
         Concepto: document.getElementById('exp-concept').value,
         Monto_ARS: Math.round(amounts.ARS),
@@ -337,6 +351,7 @@ function saveExpenseForm(e) {
         document.getElementById('expense-form').reset();
         document.getElementById('exp-old-concept').value = "";
         document.getElementById('exp-old-date').value = "";
+        editingExpenseID = ''; // [CAMBIO 16]
         document.getElementById('expense-form-title').innerText = "➕ Registrar Gasto";
     });
 }
