@@ -55,8 +55,9 @@ async function loadEventsFromSheet() {
                 const endHour = row.HoraFin !== undefined && row.HoraFin !== "" ? parseInt(row.HoraFin) : (startHour !== null ? startHour : 0);
 
                 const medio = String(row.Medio || '').trim(); // [CAMBIO 7]
+                const costCurrency = String(row.MonedaCosto || '').trim(); // [CAMBIO 18]
 
-                return { id, title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio };
+                                return { id, title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio, costCurrency };
             }).filter(e => e.title !== '');
         }
     } catch (error) {
