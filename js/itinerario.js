@@ -26,6 +26,18 @@ function eventKeyArgs(ev) {
     return `'${String(ev.title).replace(/'/g, "\\'")}', '${ev.date}', ${ev.startHour}`;
 }
 
+// [CAMBIO 18] Costo del evento en su moneda, con la conversión a las otras dos.
+// Eventos viejos sin moneda: se toman como pesos (como se mostraban antes).
+function formatEventCost(ev) {
+    const amount = parseFloat(ev.cost);
+    if (!amount) return 'Gratis / N/A';
+    const cur = CURRENCIES.includes(ev.costCurrency) ? ev.costCurrency : 'ARS';
+    const others = CURRENCIES.filter(c => c !== cur)
+        .map(c => formatMoney(convertAmount(amount, cur, c), c))
+        .join(' · ');
+    return `<b>${formatMoney(amount, cur)}</b> <span style="color:var(--text-muted); font-size:0.8rem;">(≈ ${others})</span>`;
+}
+
 function calculateDuration() {
     const startDateVal = document.getElementById('ev-date').value;
     const startHourVal = parseInt(document.getElementById('ev-hour').value) || 0;
@@ -410,7 +422,7 @@ function showModalByObject(key, date, startHour) {
         let destCoords = ev.coordsFin || ev.destLink;
 
         let origBtn = origCoords ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(origCoords)}" target="_blank" style="display:inline-block; background:#2563eb; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:0.75rem;">📍 Punto de Partida</a>` : '';
-        let destBtn = destCoords ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destCoords)}" target="_blank" style="display:inline-block; background:#0284c7; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:0.75rem; margin-left:6px;">📍 Punto de Arribo</a>` : '';
+        let destBtn = destCoords ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destCoords)}" target="_blank" style="display:inline-block; background:#0284c7; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:0.75rem;">📍 Punto de Arribo</a>` : '';
 
         // [CAMBIO 7] Medio, escalas y rutas hacia/desde los alojamientos
         const medio = getMedio(ev);
@@ -482,7 +494,7 @@ function showModalByObject(key, date, startHour) {
         <p><b>Salida / Inicio:</b> ${ev.date} ${ev.startHour !== null ? ev.startHour : 'Pendiente'}:00hs</p>
         ${arrivalInfo}
         <p><b>Duración:</b> ${ev.durationHours} horas</p>
-        <p><b>Costo estimado:</b> ${ev.cost ? '$' + ev.cost + ' ARS' : 'Gratis / N/A'}</p>
+                <p><b>Costo estimado:</b> ${formatEventCost(ev)}</p>
         ${routeHTML}
 
         <hr style="margin: 0.8rem 0; border:0; border-top: 1px solid var(--border);">
@@ -542,6 +554,7 @@ function editEventModal() {
     document.getElementById('ev-dest-link').value = ev.destLink || '';
     document.getElementById('ev-medio').value = getMedio(ev); // [CAMBIO 7] los viejos con "vuelo" vienen como Avión
     document.getElementById('ev-cost').value = ev.cost || '';
+    document.getElementById('ev-cost-currency').value = CURRENCIES.includes(ev.costCurrency) ? ev.costCurrency : (ev.cost ? 'ARS' : 'JPY'); // [CAMBIO 18]
     document.getElementById('ev-details').value = ev.details || '';
 
     toggleLocationFields();
@@ -602,6 +615,7 @@ async function saveEvent(e) {
         UbicacionFin: type === 'transporte' ? document.getElementById('ev-dest-link').value : '',
         Medio: type === 'transporte' ? document.getElementById('ev-medio').value : '', // [CAMBIO 7]
         Costo: document.getElementById('ev-cost').value,
+        MonedaCosto: document.getElementById('ev-cost').value ? document.getElementById('ev-cost-currency').value : '', // [CAMBIO 18] solo si hay costo
         Detalles: document.getElementById('ev-details').value,
         oldTitle: oldTitle,
         oldDate: oldDate
