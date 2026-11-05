@@ -32,7 +32,8 @@ body {
         background-position: left top, right top;
         background-attachment: fixed, fixed;
     }
-    body:has(#calendario.active) { background-image: url('../itinerario.png'), url('../itinerario.png'); }
+        /* [CAMBIO 17] Itinerario en dos mitades: la primera imagen va a la izquierda, la segunda a la derecha */
+    body:has(#calendario.active) { background-image: url('../itinerarioIzq.png'), url('../itinerarioDer.png'); }
     body:has(#transporte.active) { background-image: url('../mapa.png'), url('../mapa.png'); }
     body:has(#gastos.active) { background-image: url('../gastos.png'), url('../gastos.png'); }
 
