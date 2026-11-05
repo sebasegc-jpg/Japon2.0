@@ -397,9 +397,17 @@
                     </div>
                 </div>
 
+                               <!-- [CAMBIO 18] Costo con moneda (opcional) -->
                 <div class="form-group">
-                    <label>Costo Estimado (ARS / USD)</label>
-                    <input type="number" id="ev-cost" placeholder="Ej: 25000">
+                    <label>Costo Estimado (opcional)</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <select id="ev-cost-currency" style="flex:1;">
+                            <option value="JPY">¥ Yenes</option>
+                            <option value="USD">US$ Dólares</option>
+                            <option value="ARS">$ Pesos</option>
+                        </select>
+                        <input type="number" step="0.01" id="ev-cost" placeholder="Ej: 14000" style="flex:1.5;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Detalles / Recomendaciones / Colectivos</label>
