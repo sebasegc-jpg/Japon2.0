@@ -77,4 +77,48 @@ async function reloadTripData() {
         renderTimeline();
         renderMapMarkers();
     }
+
+    
+// ===== [CAMBIO 19] CONFIG DEL VIAJE (pestaña Config: Clave | Valor) =====
+
+// Lee la pestaña Config. Si no existe o falla, se siguen usando los valores de siempre.
+async function loadTripConfig() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?sheet=Config`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            tripConfig = {};
+            data.forEach(r => {
+                const clave = String(r.Clave || '').trim();
+                if (clave) tripConfig[clave] = String(r.Valor ?? '').trim();
+            });
+        }
+    } catch (e) {
+        console.warn('No se pudo leer la pestaña Config; se usan los valores por defecto.');
+    }
+    applyTripConfig();
+}
+
+// Aplica los valores de Config a la página (encabezado, pestaña del navegador y viajeros)
+function applyTripConfig() {
+    if (tripConfig.Viajero1) traveler1 = tripConfig.Viajero1;
+    if (tripConfig.Viajero2) traveler2 = tripConfig.Viajero2;
+    if (tripConfig.NombreViaje) {
+        const el = document.getElementById('trip-name');
+        if (el) el.innerText = tripConfig.NombreViaje;
+        document.title = `${tripConfig.NombreViaje} - Viaje a Japón`;
+    }
+    updateTravelerLabels();
+}
+
+// Guarda un valor en Config. Si la clave ya existe, actualiza su fila; si no, la agrega.
+async function saveConfigValue(clave, valor) {
+    const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ sheet: 'Config', Clave: clave, Valor: valor, oldTitle: clave })
+    });
+    const msg = await res.text();
+    if (msg.startsWith('Error')) throw new Error(msg);
+    tripConfig[clave] = valor;
+}
 }
