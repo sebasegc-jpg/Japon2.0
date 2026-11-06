@@ -1,6 +1,8 @@
 // ===== sheets.js =====
-// Lectura de datos desde Google Sheets (alojamientos e itinerario) y recarga completa.
+// Lectura de datos desde Google Sheets (alojamientos, itinerario y config) y recarga completa.
 // [CAMBIO 16] Cada alojamiento y evento guarda su ID (columna ID del Sheet).
+// [CAMBIO 18] Cada evento guarda la moneda de su costo (columna MonedaCosto).
+// [CAMBIO 19] Nombre del viaje y viajeros desde la pestaña Config.
 
 async function loadAccommodationsFromSheet() {
     try {
@@ -57,7 +59,7 @@ async function loadEventsFromSheet() {
                 const medio = String(row.Medio || '').trim(); // [CAMBIO 7]
                 const costCurrency = String(row.MonedaCosto || '').trim(); // [CAMBIO 18]
 
-                                return { id, title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio, costCurrency };
+                return { id, title, date, startHour, durationHours, type, location, coordsInicio, coordsFin, cost, details, bookingCode, originLink, destLink, endDate, endHour, medio, costCurrency };
             }).filter(e => e.title !== '');
         }
     } catch (error) {
@@ -77,8 +79,8 @@ async function reloadTripData() {
         renderTimeline();
         renderMapMarkers();
     }
+}
 
-    
 // ===== [CAMBIO 19] CONFIG DEL VIAJE (pestaña Config: Clave | Valor) =====
 
 // Lee la pestaña Config. Si no existe o falla, se siguen usando los valores de siempre.
@@ -120,5 +122,4 @@ async function saveConfigValue(clave, valor) {
     const msg = await res.text();
     if (msg.startsWith('Error')) throw new Error(msg);
     tripConfig[clave] = valor;
-}
 }
