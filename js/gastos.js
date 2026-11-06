@@ -59,7 +59,8 @@ function expenseOriginalCurrency(exp) {
 }
 
 // ---------- Viajeros ----------
-function ensureTravelerNames() {
+// [CAMBIO 19] Si no hay nombres (ni en Config ni en el navegador), los pide y los guarda en Config
+async function ensureTravelerNames() {
     if (!traveler1 || !traveler2) {
         let p1 = prompt("Ingresá el Nombre del Viajero 1:", traveler1 || "Sebas");
         let p2 = prompt("Ingresá el Nombre del Viajero 2:", traveler2 || "Hil");
@@ -67,6 +68,12 @@ function ensureTravelerNames() {
         traveler2 = p2 || "Hil";
         localStorage.setItem('japon2_traveler1', traveler1);
         localStorage.setItem('japon2_traveler2', traveler2);
+        try {
+            await saveConfigValue('Viajero1', traveler1);
+            await saveConfigValue('Viajero2', traveler2);
+        } catch (e) {
+            console.warn('No se pudieron guardar los nombres en Config:', e);
+        }
     }
     updateTravelerLabels();
 }
@@ -100,11 +107,18 @@ function updateTravelerLabels() {
     if (balSel) balSel.value = balanceCurrency;
 }
 
-function resetTravelers() {
+// [CAMBIO 19] Cambia los nombres y los guarda en Config (los ven todos los dispositivos)
+async function resetTravelers() {
+    if (!confirm("Ojo: los gastos ya cargados guardan el nombre de quien pagó.\nSi cambiás un nombre, esos gastos dejan de contarse en el balance.\n\n¿Querés cambiar los nombres igual?")) return;
+
     const p1 = prompt("Nombre del Viajero 1:", p1Default());
     const p2 = prompt("Nombre del Viajero 2:", p2Default());
-    if (p1) { traveler1 = p1; localStorage.setItem('japon2_traveler1', p1); }
-    if (p2) { traveler2 = p2; localStorage.setItem('japon2_traveler2', p2); }
+    try {
+        if (p1) { traveler1 = p1; localStorage.setItem('japon2_traveler1', p1); await saveConfigValue('Viajero1', p1); }
+        if (p2) { traveler2 = p2; localStorage.setItem('japon2_traveler2', p2); await saveConfigValue('Viajero2', p2); }
+    } catch (e) {
+        alert('No se pudieron guardar los nombres en el Sheet: ' + e.message);
+    }
     updateTravelerLabels();
     renderExpenses();
 }
