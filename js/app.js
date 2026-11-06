@@ -26,12 +26,27 @@ function switchTab(tabId, evt) {
     }
 }
 
+// [CAMBIO 19] Lápiz del encabezado: cambia el nombre del viaje y lo guarda en Config
+async function editTripName() {
+    const el = document.getElementById('trip-name');
+    const actual = tripConfig.NombreViaje || (el ? el.innerText : '');
+    const nuevo = prompt('Nombre del viaje:', actual);
+    if (!nuevo || nuevo.trim() === '' || nuevo.trim() === actual) return;
+    try {
+        await saveConfigValue('NombreViaje', nuevo.trim());
+        applyTripConfig();
+    } catch (e) {
+        alert('No se pudo guardar el nombre del viaje: ' + e.message);
+    }
+}
+
 async function initApp() {
     autoDetectTripBounds();
     renderHeaderDays();
     buildGrid([]);
 
     fetchLiveExchangeRate();
+    await loadTripConfig(); // [CAMBIO 19] nombre del viaje y viajeros desde el Sheet
     await loadAccommodationsFromSheet();
     await loadEventsFromSheet();
     await loadRecomendacionesFromSheet();
