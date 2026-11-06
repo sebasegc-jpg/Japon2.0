@@ -14,6 +14,7 @@ let localEvents = [];
 let accommodationsData = [];
 let recomendationsData = [];
 let rawExpenses = [];
+let tripConfig = {};            // [CAMBIO 19] valores de la pestaña Config (NombreViaje, Viajero1, Viajero2)
 
 let traveler1 = localStorage.getItem('japon2_traveler1') || '';
 let traveler2 = localStorage.getItem('japon2_traveler2') || '';
