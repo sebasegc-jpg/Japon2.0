@@ -182,7 +182,7 @@ summary.compact-summary::-webkit-details-marker { display: none; }
     /* Un poco más de espacio útil dentro de cada pestaña */
     .tab-inner-container { padding: 0.75rem; }
     /* [CAMBIO 20] Banner más bajo en celular, así el contenido aparece antes */
-    .tab-banner { height: 130px; margin-bottom: 0.75rem; }
+    .    .tab-banner { height: auto; aspect-ratio: 3 / 1; margin-bottom: 0.75rem; }
 
     /* Semanas: grilla de 2 por renglón, siempre dentro de la tarjeta */
     .schedule-controls > div { width: 100%; min-width: 0; }
