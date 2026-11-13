@@ -216,3 +216,62 @@ summary.compact-summary::-webkit-details-marker { display: none; }
     }
     .event-subtitle-line { font-size: 0.65rem; }
 }
+
+/* ===== [CAMBIO 21] TEMAS DE COLOR (se eligen con el 🎨 del encabezado) ===== */
+/* Clásico = los colores de :root (no necesita reglas). */
+html[data-theme="torii"]  { --bg-color: #f7f3ee; --primary: #b93a32; --primary-hover: #962e28; }
+html[data-theme="aiiro"]  { --bg-color: #eef1f5; --primary: #2f4b7c; --primary-hover: #243a61; }
+html[data-theme="sakura"] { --bg-color: #faf4f5; --primary: #b5527a; --primary-hover: #94405f; }
+html[data-theme="matcha"] { --bg-color: #f3f5ef; --primary: #4f7a55; --primary-hover: #3d6043; }
+
+/* --- Pixel RPG: colores + bordes gruesos, sombras duras y letra pixel en títulos y botones --- */
+html[data-theme="pixel"] { --bg-color: #f6ecc9; --primary: #3a7bd5; --primary-hover: #2c62ad; --ink: #3f3f52; }
+
+/* Fondo cuadriculado solo en celular/tablet (en PC el fondo son los banners) */
+@media (max-width: 1023px) {
+    html[data-theme="pixel"] body {
+        background-image: linear-gradient(#efe2b4 1px, transparent 1px), linear-gradient(90deg, #efe2b4 1px, transparent 1px);
+        background-size: 16px 16px;
+    }
+}
+
+html[data-theme="pixel"] header { border-bottom: 3px solid var(--ink); }
+
+html[data-theme="pixel"] .tab-inner-container,
+html[data-theme="pixel"] .tab-banner,
+html[data-theme="pixel"] .modal-content {
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    border-radius: 8px;
+}
+html[data-theme="pixel"] .tab-inner-container { background: #fffdf4; }
+
+html[data-theme="pixel"] .logo,
+html[data-theme="pixel"] .tab-btn,
+html[data-theme="pixel"] .week-btn,
+html[data-theme="pixel"] .btn-add-event,
+html[data-theme="pixel"] .filter-btn,
+html[data-theme="pixel"] h3,
+html[data-theme="pixel"] h4 {
+    font-family: 'Pixelify Sans', 'Inter', sans-serif;
+}
+
+html[data-theme="pixel"] .tab-btn.active,
+html[data-theme="pixel"] .week-btn,
+html[data-theme="pixel"] .filter-btn { border: 2px solid var(--ink); }
+
+html[data-theme="pixel"] .week-btn.active { background: #88c070; color: #1f3a14; border-color: var(--ink); }
+
+html[data-theme="pixel"] .btn-add-event {
+    background: #e8803a;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    box-shadow: 2px 2px 0 var(--ink);
+}
+html[data-theme="pixel"] .btn-add-event:hover { background: #d26f2c; }
+
+html[data-theme="pixel"] .event-block {
+    border-top: 2px solid var(--ink);
+    border-right: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+}
