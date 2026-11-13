@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Japon SH - Viaje a Japón</title>
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Leaflet Maps CSS -->
@@ -22,11 +22,22 @@
               <i class="fa-solid fa-torii-gate"></i> <span id="trip-name">Japon SH</span> <i class="fa-solid fa-mountain-sun"></i>
              <!-- [CAMBIO 19] Lápiz para cambiar el nombre del viaje -->
              <button onclick="editTripName()" title="Cambiar nombre del viaje" style="background:none; border:none; cursor:pointer; font-size:0.8rem; opacity:0.6; padding:0 0.2rem;">✏️</button>
+                              <!-- [CAMBIO 21] Botón para elegir el tema de colores -->
+             <button onclick="toggleThemePanel()" title="Cambiar colores" style="background:none; border:none; cursor:pointer; font-size:0.8rem; opacity:0.6; padding:0 0.2rem;">🎨</button>
             </div>
 
             <div class="external-links">
                 <a href="https://docs.google.com/spreadsheets/d/1J91d6zmDAMIcn2U3kDvZJ2BN8N0CteDw1azwSQ3AWFw/edit" target="_blank" class="ext-btn"><i class="fa-solid fa-table"></i> Google Sheet</a>
             </div>
+        </div>
+                <!-- [CAMBIO 21] Fila de temas (se abre con el 🎨) -->
+        <div id="theme-panel" style="display:none; flex-wrap:wrap; gap:0.4rem; padding:0.4rem 1rem; max-width:1400px; margin:0 auto;">
+            <button class="filter-btn theme-chip" data-theme="pixel" onclick="chooseTheme('pixel')">🎮 Pixel RPG</button>
+            <button class="filter-btn theme-chip" data-theme="torii" onclick="chooseTheme('torii')">⛩️ Torii</button>
+            <button class="filter-btn theme-chip" data-theme="aiiro" onclick="chooseTheme('aiiro')">🌙 Ai-iro</button>
+            <button class="filter-btn theme-chip" data-theme="sakura" onclick="chooseTheme('sakura')">🌸 Sakura</button>
+            <button class="filter-btn theme-chip" data-theme="matcha" onclick="chooseTheme('matcha')">🍵 Matcha</button>
+            <button class="filter-btn theme-chip" data-theme="clasico" onclick="chooseTheme('clasico')">🔷 Clásico</button>
         </div>
         <nav class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('calendario', event)">
