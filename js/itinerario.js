@@ -359,9 +359,13 @@ function showModalByTitle(key) {
                     🗺️ Abrir ubicación en Google Maps
                 </a>
             </div>
-            <div style="margin-top:15px;">
+               <div style="margin-top:15px; display:flex; justify-content:space-between; gap:0.5rem;">
                 <button onclick="editAccommodationModal('${safeKey}')" style="background:#0284c7; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
                     ✏️ Editar Alojamiento
+                </button>
+                <!-- [CAMBIO 22] Eliminar alojamiento -->
+                <button onclick="deleteAccommodation('${safeKey}')" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                    🗑 Eliminar Alojamiento
                 </button>
             </div>
         `;
@@ -701,5 +705,33 @@ async function deleteEvent(key, date, startHour) {
         });
     } catch (err) {
         alert('Error al sincronizar borrado.');
+    }
+}
+
+
+// [CAMBIO 22] Elimina un alojamiento (por su ID), espera al Sheet y recarga grilla y mapa
+async function deleteAccommodation(key) {
+    const acc = findAccommodation(key);
+    if (!acc) return;
+    if (!confirm(`¿Seguro que querés eliminar el alojamiento "${acc.name}"?\n\nSe borra del Sheet y del mapa.`)) return;
+
+    try {
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'delete',
+                sheet: 'Alojamiento',
+                ID: acc.id || '',   // borra exactamente esta fila
+                title: acc.name,    // respaldo si no tuviera ID
+                date: acc.start
+            })
+        });
+        const msg = await res.text();
+        if (msg.startsWith('Error')) throw new Error(msg);
+
+        closeModal('eventModal');
+        await reloadTripData();
+    } catch (err) {
+        alert('No se pudo eliminar el alojamiento: ' + err.message);
     }
 }
