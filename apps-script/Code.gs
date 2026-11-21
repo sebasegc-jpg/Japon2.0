@@ -1,6 +1,8 @@
 // ===== Code.gs =====
 // Apps Script del Sheet de Japón: lee pestañas (doGet) y guarda/edita/borra filas (doPost).
 // [CAMBIO 15] Columna ID: cada fila tiene un identificador único (IT-, AL-, RE-, GA-).
+// [CAMBIO 23] Coordenadas: si se conoce el nombre o la dirección del lugar, se geocodifica
+// antes de buscar coordenadas dentro de la página de Maps (evita caer en Buenos Aires).
 
 var ID_PREFIX = { 'Itinerario': 'IT', 'Alojamiento': 'AL', 'Recomendaciones': 'RE', 'Gastos': 'GA' };
 
@@ -246,6 +248,7 @@ function getFallbackKey(key) {
 // Expande links cortos de Google Maps leyendo el encabezado Location (sin seguir redirecciones solas)
 // [CAMBIO 3] Si el link no trae coordenadas (links compartidos desde la app del celular),
 // usa el nombre/dirección del lugar y lo consulta en el geocodificador de Apps Script.
+// [CAMBIO 23] El geocodificador se usa ANTES de buscar dentro de la página de Maps.
 function resolveGoogleMapsCoords(urlOrText) {
   if (!urlOrText || typeof urlOrText !== 'string') return "";
 
@@ -264,6 +267,7 @@ function resolveGoogleMapsCoords(urlOrText) {
   if (coordsDirectas) return coordsDirectas;
 
   var nombreLugar = extraerNombreLugar(currentUrl);
+  var textoPagina = "";
 
   var options = {
     followRedirects: false,
@@ -283,14 +287,13 @@ function resolveGoogleMapsCoords(urlOrText) {
       var coords = extraerCoordsDeTexto(location);
       if (coords) return coords;
 
-      // Guardamos el nombre del lugar si la redirección lo trae (plan B)
+      // Guardamos el nombre del lugar si la redirección lo trae
       var nombre = extraerNombreLugar(location);
       if (nombre) nombreLugar = nombre;
 
       if (!location) {
-        // Sin redirección: buscamos en el contenido de la página
-        var coordsPagina = extraerCoordsDeTexto(resp.getContentText());
-        if (coordsPagina) return coordsPagina;
+        // Sin más redirecciones: guardamos la página, pero NO la usamos todavía
+        textoPagina = resp.getContentText();
         break;
       }
       currentUrl = location;
@@ -299,9 +302,18 @@ function resolveGoogleMapsCoords(urlOrText) {
     Logger.log("Error resolviendo coordenadas: " + e.toString());
   }
 
-  // 5. Plan B: geocodificar por nombre/dirección del lugar
+  // 5. [CAMBIO 23] Si conocemos el nombre o la dirección, se geocodifica ANTES de mirar la página.
+  // La página de Maps trae coordenadas de otras cosas (por ejemplo, el centro del mapa por defecto,
+  // que suele ser Buenos Aires), y por eso algunos lugares caían ahí.
   if (nombreLugar) {
-    return geocodificarNombre(nombreLugar);
+    var geo = geocodificarNombre(nombreLugar);
+    if (geo) return geo;
+  }
+
+  // 6. Último recurso: buscar coordenadas dentro de la página
+  if (textoPagina) {
+    var coordsPagina = extraerCoordsDeTexto(textoPagina);
+    if (coordsPagina) return coordsPagina;
   }
 
   return "";
@@ -359,9 +371,10 @@ function geocodificarNombre(nombre) {
   return "";
 }
 
-// Prueba de diagnóstico: NO escribe en el Sheet
+// Prueba de diagnóstico: NO escribe en el Sheet.
+// Cambiá el link por el que quieras probar y ejecutá esta función.
 function probarCoords() {
-  var link = 'https://maps.app.goo.gl/Pf9BvmsjKartN9SR7';
+  var link = 'https://maps.app.goo.gl/aLXT4FHFivDneGzu5';
   Logger.log('Coordenadas detectadas: ' + resolveGoogleMapsCoords(link));
 }
 
@@ -381,7 +394,6 @@ function diagnosticarLink() {
 
   buscarPatron(link, 'En el link original @', /@(-?\d+\.\d+),(-?\d+\.\d+)/);
   buscarPatron(link, 'En el link original !3d!4d', /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-
   for (var hop = 0; hop < 6; hop++) {
     var resp = UrlFetchApp.fetch(url, options);
     var headers = resp.getHeaders();
