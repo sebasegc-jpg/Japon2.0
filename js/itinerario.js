@@ -3,6 +3,7 @@
 // [CAMBIO 16] Eventos y alojamientos se buscan, editan y borran por su ID.
 // [CAMBIO 26] La grilla muestra los eventos largos en todos los días que abarcan,
 //             y si dos eventos se pisan, el descanso cede las horas a los demás.
+// [CAMBIO 26b] Marco de aviso cuando hay planes superpuestos (violeta = sueño, naranja = otro evento).
 // [CAMBIO 27] Tipo "descanso" (dormir): sin ubicación, violeta, cede su lugar a otros eventos.
 
 let editingEventID = ''; // [CAMBIO 16] ID del evento que se está editando ('' = nuevo)
@@ -325,22 +326,36 @@ function buildDaySegments(validEvents, dates) {
 // Reparte las 24 horas de un día entre los eventos.
 // Primero se ubican los eventos "de verdad"; el descanso ocupa solo las horas que quedan libres.
 // Si un evento se pisa con otro, se muestra en sus horas libres (partido en trozos).
+// [CAMBIO 26b] Cada trozo anota con qué otros eventos se superpone (para dibujarle un marco de aviso).
 // Devuelve un arreglo de 24 posiciones: qué trozo ocupa cada hora (o null si está libre).
 function layoutDay(daySegments) {
     const owner = Array(24).fill(null);
+    const pieces = [];
     const place = seg => {
         let h = seg.startH;
         while (h < seg.endH) {
             if (owner[h]) { h++; continue; }
             let end = h;
             while (end < seg.endH && !owner[end]) end++;
-            const piece = { seg, startH: h, endH: end };
+            const piece = { seg, startH: h, endH: end, overlapSleep: [], overlapEvent: [] };
             for (let k = h; k < end; k++) owner[k] = piece;
+            pieces.push(piece);
             h = end;
         }
     };
     daySegments.filter(s => s.ev.type !== 'descanso').forEach(place);
     daySegments.filter(s => s.ev.type === 'descanso').forEach(place); // [CAMBIO 27]
+
+    // [CAMBIO 26b] ¿Qué otros eventos caen en las mismas horas que cada trozo visible?
+    pieces.forEach(p => {
+        daySegments.forEach(other => {
+            if (other === p.seg) return;
+            const overlaps = other.startH < p.endH && other.endH > p.startH;
+            if (!overlaps) return;
+            const list = other.ev.type === 'descanso' ? p.overlapSleep : p.overlapEvent;
+            if (!list.includes(other.ev.title)) list.push(other.ev.title);
+        });
+    });
     return owner;
 }
 
@@ -392,8 +407,22 @@ function buildGrid(events = []) {
                 subText = goesToTomorrow ? 'sigue mañana ➜' : `hasta ${String(piece.endH).padStart(2, '0')}:00`;
             }
 
+            // [CAMBIO 26b] Marco de aviso si hay planes superpuestos:
+            // violeta = se pisa con horas de sueño · naranja = se pisa con otro evento
+            let frameStyle = '';
+            const tips = [];
+            if (piece.overlapEvent.length > 0) {
+                frameStyle = 'box-shadow: inset 0 0 0 2px #f59e0b;';
+                tips.push('Se superpone con: ' + piece.overlapEvent.join(', '));
+            }
+            if (piece.overlapSleep.length > 0) {
+                frameStyle = 'box-shadow: inset 0 0 0 2px #7c3aed;'; // el sueño tiene prioridad en el color
+                tips.push('Horas de sueño planeadas: ' + piece.overlapSleep.join(', '));
+            }
+            const tipAttr = tips.length > 0 ? ` title="${tips.join(' · ').replace(/"/g, '&quot;')}"` : '';
+
             rowHTML += `<td rowspan="${span}" style="padding:1px; vertical-align:top; height:${span * 38}px;">
-                <div class="event-block event-${e.type || 'actividad'}" onclick="showModalByObject(${eventKeyArgs(e)})">
+                <div class="event-block event-${e.type || 'actividad'}" style="${frameStyle}"${tipAttr} onclick="showModalByObject(${eventKeyArgs(e)})">
                     <div class="event-title-line">${titleText}</div>
                     <div class="event-subtitle-line">${subText}</div>
                 </div>
