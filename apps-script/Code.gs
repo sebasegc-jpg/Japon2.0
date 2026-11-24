@@ -63,7 +63,6 @@ function doPost(e) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheetName = item.sheet || 'Itinerario';
     var sheet = doc.getSheetByName(sheetName);
-
     if (!sheet) {
       return ContentService.createTextOutput("Error: No se encontró la pestaña " + sheetName);
     }
@@ -321,13 +320,31 @@ function resolveGoogleMapsCoords(urlOrText) {
 
 // Busca coordenadas dentro de un texto o URL de Google Maps.
 // [CAMBIO 5] Prioriza !3d!4d (punto exacto del lugar) sobre @ (centro de la pantalla).
+// Busca coordenadas dentro de un texto o URL de Google Maps.
+// [CAMBIO 5] Prioriza !3d!4d (punto exacto del lugar) sobre @ (centro de la pantalla).
+// [CAMBIO 24] Reconoce también /maps/search/lat,+lng y /maps/place/lat,lng
+// (el formato de los pines marcados a mano en Google Maps).
 function extraerCoordsDeTexto(texto) {
   if (!texto) return "";
   var t = String(texto);
   var m = t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
-          t.match(/query=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/) ||
+          t.match(/\/maps\/(?:search|place)\/(-?\d+\.\d+)(?:,|%2C)(?:\+|%20)?(-?\d+\.\d+)/) ||
+          t.match(/query=(-?\d+\.\d+)(?:%2C|,)(?:\+|%20)?(-?\d+\.\d+)/) ||
           t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   return m ? m[1] + "," + m[2] : "";
+}
+
+// [CAMBIO 24] Prueba sin internet: verifica que se reconozcan los distintos formatos de link.
+// NO escribe en el Sheet.
+function probarFormatos() {
+  var ejemplos = [
+    'https://www.google.com/maps/search/-41.136514,+-71.304711?entry=tts',
+    'https://www.google.com/maps/place/-41.136514,-71.304711/@-41.1,-71.3,17z',
+    'https://www.google.com/maps/place/Hotel/@-41.10,-71.20,17z/data=!3d-41.136514!4d-71.304711'
+  ];
+  ejemplos.forEach(function (u) {
+    Logger.log(extraerCoordsDeTexto(u) + '   <=   ' + u);
+  });
 }
 
 // [CAMBIO 3] Saca el nombre/dirección del lugar de una URL de Google Maps.
@@ -374,7 +391,7 @@ function geocodificarNombre(nombre) {
 // Prueba de diagnóstico: NO escribe en el Sheet.
 // Cambiá el link por el que quieras probar y ejecutá esta función.
 function probarCoords() {
-  var link = 'https://maps.app.goo.gl/aLXT4FHFivDneGzu5';
+  var link = 'https://maps.app.goo.gl/2abK4zvmJ2HXCEAGA';
   Logger.log('Coordenadas detectadas: ' + resolveGoogleMapsCoords(link));
 }
 
