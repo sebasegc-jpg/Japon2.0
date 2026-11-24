@@ -23,7 +23,8 @@ function renderTimeline() {
         });
     });
 
-    localEvents.forEach(e => {
+       localEvents.forEach(e => {
+        if (e.type === 'descanso') return; // [CAMBIO 27] el sueño no va en la cronología
         let dObj = parseDateStr(e.date);
         let hourOffset = (e.startHour !== null ? parseInt(e.startHour) : 0) * 3600000;
         let timeSort = dObj ? (dObj.getTime() + hourOffset) : 0;
@@ -130,7 +131,7 @@ function renderMapMarkers(categoryFilter = currentMapFilter) {
     // 2. ITINERARIO
     if (categoryFilter === 'all' || categoryFilter === 'itinerario') {
         for (const ev of localEvents) {
-            if (ev.type === 'sleep') continue;
+         if (ev.type === 'sleep' || ev.type === 'descanso') continue; // [CAMBIO 27]
             const icon = getEventIcon(ev);
             const when = `${ev.date} (${ev.startHour !== null ? ev.startHour + ':00hs' : 'Pendiente'})`;
 
