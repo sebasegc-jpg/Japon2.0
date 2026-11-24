@@ -26,6 +26,7 @@ function getEventIcon(ev) {
     if (ev.type === 'transporte') return MEDIO_ICONS[getMedio(ev)] || '🚌';
     if (ev.type === 'show') return '🎸';
     if (ev.type === 'sleep') return '🏨';
+        if (ev.type === 'descanso') return '😴'; // [CAMBIO 27]
     return '📍';
 }
 
@@ -114,7 +115,7 @@ function getPreviousStop(ev) {
     if (ev.startHour === null) return null;
     let best = null, bestHour = -1;
     localEvents.forEach(e => {
-        if (e === ev || e.type === 'sleep') return;
+     if (e === ev || e.type === 'sleep' || e.type === 'descanso') return; // [CAMBIO 27]
         if (e.type === 'transporte') {
             const arrDate = e.endDate || e.date;
             const arrHour = (e.endHour !== null && e.endHour !== undefined && !isNaN(e.endHour)) ? e.endHour : e.startHour;
@@ -151,7 +152,7 @@ function getHotelForEvent(ev) {
 // ¿Es lo último del día? (no hay otro evento ni transporte más tarde ese mismo día)
 function isLastOfDay(ev) {
     if (ev.startHour === null) return false;
-    return !localEvents.some(e => e !== ev && e.type !== 'sleep' && e.startHour !== null &&
+        return !localEvents.some(e => e !== ev && e.type !== 'sleep' && e.type !== 'descanso' && e.startHour !== null && // [CAMBIO 27]
         sameDay(e.date, ev.date) && e.startHour > ev.startHour);
 }
 
@@ -168,7 +169,7 @@ function buildPlacesOptions(excludeCoords) {
     accommodationsData.forEach(a => add(a.coords, `🏨 ${a.name}`));
     html += '</optgroup><optgroup label="📅 Itinerario">';
     localEvents.forEach(e => {
-        if (e.type === 'sleep') return;
+        if (e.type === 'sleep' || e.type === 'descanso') return; // [CAMBIO 27]
         if (e.type === 'transporte') {
             add(e.coordsInicio, `${getEventIcon(e)} ${e.title} (salida)`);
             add(e.coordsFin, `${getEventIcon(e)} ${e.title} (llegada)`);
