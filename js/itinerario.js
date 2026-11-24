@@ -1,6 +1,9 @@
 // ===== itinerario.js =====
 // Pestaña Itinerario: semanas, grilla horaria, detalle de eventos, formulario y guardado.
 // [CAMBIO 16] Eventos y alojamientos se buscan, editan y borran por su ID.
+// [CAMBIO 26] La grilla muestra los eventos largos en todos los días que abarcan,
+//             y si dos eventos se pisan, el descanso cede las horas a los demás.
+// [CAMBIO 27] Tipo "descanso" (dormir): sin ubicación, violeta, cede su lugar a otros eventos.
 
 let editingEventID = ''; // [CAMBIO 16] ID del evento que se está editando ('' = nuevo)
 
@@ -50,6 +53,13 @@ function calculateDuration() {
         const start = new Date(`${startDateVal}T${startHourVal.toString().padStart(2, '0')}:00:00`);
         const end = new Date(`${endDateVal}T${endHourVal.toString().padStart(2, '0')}:00:00`);
 
+        // [CAMBIO 26] Si termina "antes" de empezar el mismo día, es que cruza la medianoche:
+        // la fecha de fin pasa sola al día siguiente (ej: dormir de 23 a 7).
+        if (end <= start && endDateVal === startDateVal) {
+            end.setDate(end.getDate() + 1);
+            document.getElementById('ev-end-date').value = formatDateToISO(end);
+        }
+
         const diffMs = end - start;
         if (diffMs > 0) {
             const diffHours = Math.round(diffMs / (1000 * 60 * 60));
@@ -78,6 +88,7 @@ function scrollGridToFirstEvent() {
     const weekISO = getDatesForCurrentWeek().map(d => formatDateToISO(d));
     let firstHour = null;
     localEvents.forEach(e => {
+        if (e.type === 'descanso') return; // [CAMBIO 27] el sueño no define dónde arranca la vista
         if (e.startHour === null || e.startHour < 0 || e.startHour > 23) return;
         const d = parseDateStr(e.date);
         if (!d || !weekISO.includes(formatDateToISO(d))) return;
@@ -175,6 +186,7 @@ function populateLocationSelects() {
         optionsHTML += `<optgroup label="📅 Eventos / Lugares">`;
         let added = new Set();
         localEvents.forEach(e => {
+            if (e.type === 'descanso') return; // [CAMBIO 27] el descanso no es un lugar
             let loc = e.coordsInicio || e.location || e.title;
             if (loc && !added.has(loc)) {
                 added.add(loc);
@@ -274,6 +286,65 @@ function editPendingEvent(key, date, startHour) {
     editEventModal();
 }
 
+// ===== [CAMBIO 26] GRILLA CON EVENTOS QUE CRUZAN DÍAS =====
+
+// Inicio y fin de un evento en milisegundos.
+// Si no tiene un fin válido (o termina antes de empezar), se usa inicio + duración.
+function eventSpanMs(e) {
+    const start = legStartMs(e);
+    let end = legEndMs(e);
+    if (!(end > start)) end = start + (parseInt(e.durationHours) || 1) * 3600000;
+    return { start, end };
+}
+
+// Para cada día de la semana visible: qué parte de cada evento cae en ese día.
+// Así un evento largo (un vuelo, una noche de sueño) aparece en todos los días que abarca.
+function buildDaySegments(validEvents, dates) {
+    const segments = dates.map(() => []);
+    dates.forEach((d, dayIdx) => {
+        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const dayEnd = dayStart + 24 * 3600000;
+        validEvents.forEach(e => {
+            const span = eventSpanMs(e);
+            const s = Math.max(span.start, dayStart);
+            const f = Math.min(span.end, dayEnd);
+            if (f <= s) return; // el evento no toca este día
+            segments[dayIdx].push({
+                ev: e,
+                startH: Math.floor((s - dayStart) / 3600000),
+                endH: Math.min(24, Math.ceil((f - dayStart) / 3600000)),
+                isStart: span.start >= dayStart,   // el evento empieza este día
+                continues: span.end > dayEnd       // el evento sigue al día siguiente
+            });
+        });
+        segments[dayIdx].sort((a, b) => a.startH - b.startH);
+    });
+    return segments;
+}
+
+// Reparte las 24 horas de un día entre los eventos.
+// Primero se ubican los eventos "de verdad"; el descanso ocupa solo las horas que quedan libres.
+// Si un evento se pisa con otro, se muestra en sus horas libres (partido en trozos).
+// Devuelve un arreglo de 24 posiciones: qué trozo ocupa cada hora (o null si está libre).
+function layoutDay(daySegments) {
+    const owner = Array(24).fill(null);
+    const place = seg => {
+        let h = seg.startH;
+        while (h < seg.endH) {
+            if (owner[h]) { h++; continue; }
+            let end = h;
+            while (end < seg.endH && !owner[end]) end++;
+            const piece = { seg, startH: h, endH: end };
+            for (let k = h; k < end; k++) owner[k] = piece;
+            h = end;
+        }
+    };
+    daySegments.filter(s => s.ev.type !== 'descanso').forEach(place);
+    daySegments.filter(s => s.ev.type === 'descanso').forEach(place); // [CAMBIO 27]
+    return owner;
+}
+
+// Grilla semanal: dibuja cada evento en todos los días que abarca.
 function buildGrid(events = []) {
     const tbody = document.getElementById('grid-body');
     if (!tbody) return;
@@ -285,59 +356,48 @@ function buildGrid(events = []) {
     renderPendingEvents(pendingEvents);
 
     const dates = getDatesForCurrentWeek();
-    let occupiedCells = Array.from({ length: 24 }, () => Array(7).fill(false));
-
-    dates.forEach((d, dayIdx) => {
-        let currentDateISO = formatDateToISO(d);
-
-        validEvents.forEach(e => {
-            let evStartDate = parseDateStr(e.date);
-            if (!evStartDate) return;
-
-            let evStartISO = formatDateToISO(evStartDate);
-            let rawDuration = parseInt(e.durationHours) || 1;
-
-            if (evStartISO === currentDateISO) {
-                let startH = e.startHour;
-                let endH = Math.min(24, startH + rawDuration);
-                for (let h = startH; h < endH; h++) {
-                    occupiedCells[h][dayIdx] = true;
-                }
-            }
-        });
-    });
+    const segments = buildDaySegments(validEvents, dates);
+    const layouts = segments.map(layoutDay); // layouts[día][hora] = trozo de evento o null
 
     for (let hour = 0; hour < 24; hour++) {
         const tr = document.createElement('tr');
         let rowHTML = `<td class="time-col">${hour.toString().padStart(2, '0')}:00</td>`;
 
         for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-            let d = dates[dayIdx];
-            let currentDateISO = formatDateToISO(d);
+            const piece = layouts[dayIdx][hour];
 
-            const evStart = validEvents.find(e => {
-                let evDateObj = parseDateStr(e.date);
-                return evDateObj && formatDateToISO(evDateObj) === currentDateISO && e.startHour === hour;
-            });
-
-            if (evStart) {
-                const rawDuration = parseInt(evStart.durationHours) || 1;
-                let visualSpan = Math.min(rawDuration, 24 - hour);
-
-                let locText = evStart.type === 'transporte' ? 'Traslado / Vuelo' : (evStart.location || '');
-                let icon = getEventIcon(evStart); // [CAMBIO 7]
-
-                rowHTML += `<td rowspan="${visualSpan}" style="padding:1px; vertical-align:top; height:${visualSpan * 38}px;">
-                    <div class="event-block event-${evStart.type || 'actividad'}" onclick="showModalByObject(${eventKeyArgs(evStart)})">
-                        <div class="event-title-line">${icon} ${evStart.title}</div>
-                        <div class="event-subtitle-line">${rawDuration}h totales ${locText ? '| ' + locText : ''}</div>
-                    </div>
-                </td>`;
-            } else {
-                if (!occupiedCells[hour][dayIdx]) {
-                    rowHTML += `<td></td>`;
-                }
+            if (!piece) {                       // hora libre
+                rowHTML += `<td></td>`;
+                continue;
             }
+            if (piece.startH !== hour) continue; // la cubre un bloque que empezó más arriba
+
+            const seg = piece.seg;
+            const e = seg.ev;
+            const span = piece.endH - piece.startH;
+            const rawDuration = parseInt(e.durationHours) || 1;
+            const icon = getEventIcon(e); // [CAMBIO 7]
+            const locText = e.type === 'transporte' ? 'Traslado / Vuelo' : (e.type === 'descanso' ? '' : (e.location || ''));
+
+            // ¿Es el primer trozo de un evento que empieza hoy? Si no, es continuación.
+            const isFirstPiece = seg.isStart && piece.startH === seg.startH;
+            const goesToTomorrow = seg.continues && piece.endH === 24;
+
+            let titleText, subText;
+            if (isFirstPiece) {
+                titleText = `${icon} ${e.title}`;
+                subText = `${rawDuration}h totales${locText ? ' | ' + locText : ''}${goesToTomorrow ? ' · sigue mañana ➜' : ''}`;
+            } else {
+                titleText = `${icon} ${e.title} (cont.)`;
+                subText = goesToTomorrow ? 'sigue mañana ➜' : `hasta ${String(piece.endH).padStart(2, '0')}:00`;
+            }
+
+            rowHTML += `<td rowspan="${span}" style="padding:1px; vertical-align:top; height:${span * 38}px;">
+                <div class="event-block event-${e.type || 'actividad'}" onclick="showModalByObject(${eventKeyArgs(e)})">
+                    <div class="event-title-line">${titleText}</div>
+                    <div class="event-subtitle-line">${subText}</div>
+                </div>
+            </td>`;
         }
         tr.innerHTML = rowHTML;
         tbody.appendChild(tr);
@@ -359,7 +419,7 @@ function showModalByTitle(key) {
                     🗺️ Abrir ubicación en Google Maps
                 </a>
             </div>
-               <div style="margin-top:15px; display:flex; justify-content:space-between; gap:0.5rem;">
+            <div style="margin-top:15px; display:flex; justify-content:space-between; gap:0.5rem;">
                 <button onclick="editAccommodationModal('${safeKey}')" style="background:#0284c7; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
                     ✏️ Editar Alojamiento
                 </button>
@@ -483,6 +543,10 @@ function showModalByObject(key, date, startHour) {
                 </div>
                 ${chainHTML}
             </div>`;
+    } else if (ev.type === 'descanso') {
+        // [CAMBIO 27] Descanso: sin ubicación ni rutas; se muestra el hotel de esa noche
+        const hotel = getHotelSleepingOn(ev.date);
+        routeHTML = `<p><b>Dónde:</b> ${hotel ? '🏨 ' + hotel.name : '<span style="color:#b45309;">⚠️ No hay alojamiento cargado para esa noche</span>'}</p>`;
     } else {
         let loc = ev.coordsInicio || ev.location || ev.title;
         let locLink = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}" target="_blank" style="color:#1d4ed8; text-decoration:underline;">📍 Abrir Ubicación</a>`;
@@ -498,7 +562,7 @@ function showModalByObject(key, date, startHour) {
         <p><b>Salida / Inicio:</b> ${ev.date} ${ev.startHour !== null ? ev.startHour : 'Pendiente'}:00hs</p>
         ${arrivalInfo}
         <p><b>Duración:</b> ${ev.durationHours} horas</p>
-                <p><b>Costo estimado:</b> ${formatEventCost(ev)}</p>
+        <p><b>Costo estimado:</b> ${formatEventCost(ev)}</p>
         ${routeHTML}
 
         <hr style="margin: 0.8rem 0; border:0; border-top: 1px solid var(--border);">
@@ -567,7 +631,8 @@ function editEventModal() {
 
 function toggleLocationFields() {
     const type = document.getElementById('ev-type').value;
-    document.getElementById('single-location-group').style.display = type === 'transporte' ? 'none' : 'block';
+    // [CAMBIO 27] El descanso no lleva ubicación (se duerme en el hotel de esa noche)
+    document.getElementById('single-location-group').style.display = (type === 'transporte' || type === 'descanso') ? 'none' : 'block';
     document.getElementById('transport-location-group').style.display = type === 'transporte' ? 'flex' : 'none';
 }
 
@@ -604,6 +669,11 @@ async function saveEvent(e) {
     let endHVal = document.getElementById('ev-end-hour').value;
     let endH = (endHVal !== "") ? parseInt(endHVal) : Math.min(23, startH + durH);
 
+    // [CAMBIO 27] Qué ubicación se guarda según el tipo (el descanso no lleva)
+    let ubicacionInicio = '';
+    if (type === 'transporte') ubicacionInicio = document.getElementById('ev-origin-link').value;
+    else if (type !== 'descanso') ubicacionInicio = document.getElementById('ev-location').value;
+
     const newEv = {
         sheet: targetSheet,
         ID: recordID, // [CAMBIO 16]
@@ -615,7 +685,7 @@ async function saveEvent(e) {
         HoraFin: endH,
         Duracion: durH,
         CodigoReserva: document.getElementById('ev-booking-code').value,
-        UbicacionInicio: type === 'transporte' ? document.getElementById('ev-origin-link').value : document.getElementById('ev-location').value,
+        UbicacionInicio: ubicacionInicio,
         UbicacionFin: type === 'transporte' ? document.getElementById('ev-dest-link').value : '',
         Medio: type === 'transporte' ? document.getElementById('ev-medio').value : '', // [CAMBIO 7]
         Costo: document.getElementById('ev-cost').value,
@@ -707,7 +777,6 @@ async function deleteEvent(key, date, startHour) {
         alert('Error al sincronizar borrado.');
     }
 }
-
 
 // [CAMBIO 22] Elimina un alojamiento (por su ID), espera al Sheet y recarga grilla y mapa
 async function deleteAccommodation(key) {
