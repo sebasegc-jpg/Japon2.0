@@ -353,11 +353,13 @@
                     </div>
                     <div class="form-group" style="flex:1;">
                         <label>Tipo de Evento</label>
-                        <select id="ev-type" onchange="toggleLocationFields()">
+                         <select id="ev-type" onchange="toggleLocationFields()">
                             <option value="show">Show / Recital</option>
                             <option value="actividad">Actividad / Paseo</option>
                             <option value="transporte">Transporte / Colectivo / Subte / Vuelo</option>
-                            <option value="sleep">Alojamiento / Descanso</option>
+                            <!-- [CAMBIO 27] Dormir se guarda en el Itinerario; Alojamiento (hotel) en su pestaña -->
+                            <option value="descanso">😴 Dormir / Descanso</option>
+                            <option value="sleep">🏨 Alojamiento (hotel)</option>
                         </select>
                     </div>
                 </div>
