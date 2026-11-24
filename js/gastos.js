@@ -4,14 +4,57 @@
 // (convertidos con la cotización del día en que se cargó) y la Moneda original.
 // El balance se muestra en la moneda elegida en el desplegable.
 // [CAMBIO 16] Editar y borrar usan la columna ID (fila exacta, aunque haya conceptos repetidos).
+// [CAMBIO 19] Los nombres de los viajeros se guardan en la pestaña Config del Sheet.
+// [CAMBIO 28] Nombres a prueba de errores: comparación flexible, y los gastos con un pagador
+//             que no se reconoce no se cuentan (se marcan con ⚠️ en vez de generar una deuda falsa).
 
 const CURRENCIES = ['JPY', 'USD', 'ARS'];
 const SHEET_COL = { JPY: 'Monto_JPY', USD: 'Monto_Dlr', ARS: 'Monto_ARS' };
 
-let editingExpenseID = ''; // [CAMBIO 16] ID del gasto que se está editando ('' = gasto nuevo)
+let editingExpenseID = '';  // [CAMBIO 16] ID del gasto que se está editando ('' = gasto nuevo)
+let pendingSheetNames = []; // [CAMBIO 28] los dos nombres encontrados en el Sheet, para el botón "Usar X e Y"
 
 function p1Default() { return traveler1 || "Sebas"; }
 function p2Default() { return traveler2 || "Hil"; }
+
+// ---------- [CAMBIO 28] Reconocer a quién pagó ----------
+
+// Nombre "normalizado": sin espacios de más, en minúsculas y sin acentos.
+// Así "Sebas", "sebas " y "SEBAS" son la misma persona.
+function normName(s) {
+    return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Devuelve 'p1', 'p2' o null (si el nombre no coincide con ningún viajero)
+function whoPaid(payer, p1Name, p2Name) {
+    const n = normName(payer);
+    if (n === 'p1' || (n !== '' && n === normName(p1Name))) return 'p1';
+    if (n === 'p2' || (n !== '' && n === normName(p2Name))) return 'p2';
+    return null;
+}
+
+// Botón "Usar X e Y": toma los dos nombres que aparecen en los gastos como viajeros
+// y los guarda en este dispositivo y en Config (para todos).
+async function adoptSheetNames() {
+    if (pendingSheetNames.length !== 2) return;
+    const [n1, n2] = pendingSheetNames;
+    if (!confirm(`¿Usar "${n1}" y "${n2}" como nombres de los viajeros?\n\nSe guardan en Config y los ven todos los dispositivos.`)) return;
+
+    traveler1 = n1;
+    traveler2 = n2;
+    try {
+        localStorage.setItem('japon2_traveler1', n1);
+        localStorage.setItem('japon2_traveler2', n2);
+    } catch (e) {}
+    try {
+        await saveConfigValue('Viajero1', n1);
+        await saveConfigValue('Viajero2', n2);
+    } catch (e) {
+        alert('No se pudieron guardar los nombres en el Sheet: ' + e.message);
+    }
+    updateTravelerLabels();
+    renderExpenses();
+}
 
 // ---------- Conversión de monedas (todo pasa por el dólar) ----------
 function toUSD(amount, cur) {
@@ -59,6 +102,7 @@ function expenseOriginalCurrency(exp) {
 }
 
 // ---------- Viajeros ----------
+
 // [CAMBIO 19] Si no hay nombres (ni en Config ni en el navegador), los pide y los guarda en Config
 async function ensureTravelerNames() {
     if (!traveler1 || !traveler2) {
@@ -200,6 +244,11 @@ function renderExpenses() {
     let paidP2 = 0;   // lo que pagó Viajero 2
     let shareP1 = 0;  // [CAMBIO 11] lo que le correspondía pagar a Viajero 1
 
+    // [CAMBIO 28] Gastos cuyo pagador no se reconoce, y todos los nombres que aparecen en el Sheet
+    let unknownCount = 0;
+    const unknownNames = [];
+    const sheetNames = [];
+
     const tbody = document.getElementById('expense-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -208,22 +257,34 @@ function renderExpenses() {
         rawExpenses.forEach(exp => {
             const amount = expenseAmountIn(exp, cur);
             const payer = exp.PagadoPor || '';
+            const who = whoPaid(payer, p1Name, p2Name); // [CAMBIO 28]
 
-            if (payer === 'p1' || payer === p1Name) {
-                paidP1 += amount;
-            } else if (payer === 'p2' || payer === p2Name) {
-                paidP2 += amount;
+            // [CAMBIO 28] Anotar los nombres distintos que aparecen (sin repetir)
+            const pTrim = String(payer).trim();
+            if (pTrim && pTrim !== 'p1' && pTrim !== 'p2' && !sheetNames.some(n => normName(n) === normName(pTrim))) {
+                sheetNames.push(pTrim);
             }
 
             const split = exp.DivididoPor || 'both';
-            if (split === 'p1_only') {
-                shareP1 += amount;          // todo es de Viajero 1
-            } else if (split === 'p2_only') {
-                shareP1 += 0;               // todo es de Viajero 2
-            } else {
-                shareP1 += amount / 2;      // compartido 50/50
-            }
             const splitLabel = split === 'p1_only' ? `solo ${p1Name}` : (split === 'p2_only' ? `solo ${p2Name}` : 'compartido');
+
+            if (who === null) {
+                // [CAMBIO 28] Pagador desconocido: no se cuenta en los totales ni en la división
+                unknownCount++;
+                if (pTrim && !unknownNames.includes(pTrim)) unknownNames.push(pTrim || '(vacío)');
+                if (!pTrim && !unknownNames.includes('(vacío)')) unknownNames.push('(vacío)');
+            } else {
+                if (who === 'p1') paidP1 += amount;
+                else paidP2 += amount;
+
+                if (split === 'p1_only') {
+                    shareP1 += amount;          // todo es de Viajero 1
+                } else if (split === 'p2_only') {
+                    shareP1 += 0;               // todo es de Viajero 2
+                } else {
+                    shareP1 += amount / 2;      // compartido 50/50
+                }
+            }
 
             // La moneda en que se cargó el gasto se muestra en negrita
             const orig = expenseOriginalCurrency(exp);
@@ -233,6 +294,10 @@ function renderExpenses() {
             };
 
             const safeID = String(exp.ID || '').replace(/'/g, "\\'"); // [CAMBIO 16]
+            // [CAMBIO 28] Pagador desconocido: marcado con ⚠️
+            const payerHTML = who === null
+                ? `<span style="color:#b45309; font-weight:bold;" title="Este nombre no coincide con ningún viajero: no se cuenta en el balance">⚠️ ${payer || '(vacío)'}</span>`
+                : payer;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -241,7 +306,7 @@ function renderExpenses() {
                 <td>${cell('JPY')}</td>
                 <td>${cell('USD')}</td>
                 <td>${cell('ARS')}</td>
-                <td>${payer}<br><span style="font-size:0.72rem; color:var(--text-muted);">${splitLabel}</span></td>
+                <td>${payerHTML}<br><span style="font-size:0.72rem; color:var(--text-muted);">${splitLabel}</span></td>
                 <td>${exp.Categoria || ''}</td>
                 <td>
                     <button onclick="editExpenseRow('${safeID}')" style="background:#0284c7; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; font-weight:bold;">✏️</button>
@@ -258,9 +323,21 @@ function renderExpenses() {
     document.getElementById('total-p2-usd').innerText = formatMoney(paidP2, cur);
     document.getElementById('total-trip-usd').innerText = formatMoney(paidP1 + paidP2, cur);
 
+    const settlementText = document.getElementById('settlement-text');
+
+    // [CAMBIO 28] Si hay pagadores sin reconocer, se avisa en vez de mostrar una deuda que podría ser falsa
+    if (unknownCount > 0) {
+        pendingSheetNames = sheetNames.length === 2 ? sheetNames.slice() : [];
+        const btn = pendingSheetNames.length === 2
+            ? `<br><button onclick="adoptSheetNames()" style="margin-top:6px; background:#7c3aed; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">Usar "${pendingSheetNames[0]}" y "${pendingSheetNames[1]}" como viajeros</button>`
+            : '';
+        settlementText.innerHTML = `<span style="color:#b45309;">⚠️ ${unknownCount} gasto(s) con un pagador que no coincide con los viajeros (${unknownNames.join(', ')}). No se cuentan en el balance hasta corregirlos.</span>${btn}`;
+        return;
+    }
+    pendingSheetNames = [];
+
     // Saldo = lo que pagó Viajero 1 menos lo que le correspondía pagar.
     // Positivo: Viajero 2 le debe a Viajero 1. Negativo: al revés.
-    const settlementText = document.getElementById('settlement-text');
     const balance = paidP1 - shareP1;
     const minDiff = { JPY: 50, USD: 0.5, ARS: 500 }[cur];  // diferencias chicas = saldado
     if (Math.abs(balance) < minDiff) {
@@ -295,7 +372,8 @@ function editExpenseRow(id) {
     document.getElementById('exp-concept').value = exp.Concepto;
     document.getElementById('exp-currency').value = orig;
     document.getElementById('exp-amount').value = orig === 'USD' ? origAmount.toFixed(2) : Math.round(origAmount);
-    document.getElementById('exp-payer').value = (exp.PagadoPor === p1Default()) ? 'p1' : 'p2';
+    // [CAMBIO 28] Comparación flexible del nombre (si no se reconoce, queda Viajero 1 para que lo corrijas)
+    document.getElementById('exp-payer').value = whoPaid(exp.PagadoPor, p1Default(), p2Default()) || 'p1';
     document.getElementById('exp-category').value = exp.Categoria || 'Entradas';
     document.getElementById('exp-split').value = exp.DivididoPor || 'both';
 
