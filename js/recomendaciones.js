@@ -140,7 +140,18 @@ async function saveRecomForm(e) {
         Detalles: document.getElementById('rec-details').value,
         oldTitle: document.getElementById('rec-old-title').value
     };
-
+    // [CAMBIO 31] Aviso si otra recomendación ya usa el mismo link de Google Maps
+    // (se puede guardar igual: a veces son dos cosas distintas en el mismo lugar)
+    const linkNuevo = String(recomData.LinkGoogleMaps || '').trim();
+    if (linkNuevo !== '') {
+        const same = recomendationsData.find(r =>
+            String(r.ID || '') !== String(editingRecomID || '') &&
+            String(r.LinkGoogleMaps || '').trim() === linkNuevo
+        );
+        if (same && !confirm(`⚠️ Este link ya lo usa la recomendación "${same.Titulo || same.title || ''}".\n\n¿Seguro que es el mismo lugar?\n\nAceptar = guardar igual\nCancelar = volver a revisar el link`)) {
+            return; // no guarda: el formulario queda abierto para corregir
+        }
+    }
     const submitBtn = e.submitter || document.querySelector('#recomForm button[type="submit"]');
     const originalBtnText = submitBtn ? submitBtn.innerText : '';
     if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '⏳ Guardando...'; }
