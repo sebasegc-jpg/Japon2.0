@@ -752,18 +752,7 @@ async function saveEvent(e) {
             return; // no guarda: el formulario queda abierto para corregir
         }
     }
-    // [CAMBIO 31] Aviso si otra recomendación ya usa el mismo link de Google Maps
-    // (se puede guardar igual: a veces son dos cosas distintas en el mismo lugar)
-    const linkNuevo = String(recomData.LinkGoogleMaps || '').trim();
-    if (linkNuevo !== '') {
-        const same = recomendationsData.find(r =>
-            String(r.ID || '') !== String(editingRecomID || '') &&
-            String(r.LinkGoogleMaps || '').trim() === linkNuevo
-        );
-        if (same && !confirm(`⚠️ Este link ya lo usa la recomendación "${same.Titulo || same.title || ''}".\n\n¿Seguro que es el mismo lugar?\n\nAceptar = guardar igual\nCancelar = volver a revisar el link`)) {
-            return; // no guarda: el formulario queda abierto para corregir
-        }
-    }
+    
     // Botón en modo "Guardando..." para evitar doble clic
     const submitBtn = e.submitter || document.querySelector('#addEventForm button[type="submit"]');
     const originalBtnText = submitBtn ? submitBtn.innerText : '';
