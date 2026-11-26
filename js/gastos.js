@@ -13,9 +13,9 @@ const SHEET_COL = { JPY: 'Monto_JPY', USD: 'Monto_Dlr', ARS: 'Monto_ARS' };
 
 let editingExpenseID = '';  // [CAMBIO 16] ID del gasto que se está editando ('' = gasto nuevo)
 let pendingSheetNames = []; // [CAMBIO 28] los dos nombres encontrados en el Sheet, para el botón "Usar X e Y"
-
-function p1Default() { return traveler1 || "Sebas"; }
-function p2Default() { return traveler2 || "Hil"; }
+// [CAMBIO 30] Nombres genéricos por defecto (se asignan desde Config o con el botón 👤)
+function p1Default() { return traveler1 || "Usuario 1"; }
+function p2Default() { return traveler2 || "Usuario 2"; }
 
 // ---------- [CAMBIO 28] Reconocer a quién pagó ----------
 
@@ -106,10 +106,11 @@ function expenseOriginalCurrency(exp) {
 // [CAMBIO 19] Si no hay nombres (ni en Config ni en el navegador), los pide y los guarda en Config
 async function ensureTravelerNames() {
     if (!traveler1 || !traveler2) {
-        let p1 = prompt("Ingresá el Nombre del Viajero 1:", traveler1 || "Sebas");
-        let p2 = prompt("Ingresá el Nombre del Viajero 2:", traveler2 || "Hil");
-        traveler1 = p1 || "Sebas";
-        traveler2 = p2 || "Hil";
+        // [CAMBIO 30] Nombres genéricos y consejo para que coincidan en todos los dispositivos
+        let p1 = prompt("Nombre del Viajero 1\n(se guarda para todos los dispositivos: definilo una vez y no lo cambies):", traveler1 || "Usuario 1");
+        let p2 = prompt("Nombre del Viajero 2\n(se guarda para todos los dispositivos: definilo una vez y no lo cambies):", traveler2 || "Usuario 2");
+        traveler1 = p1 || "Usuario 1";
+        traveler2 = p2 || "Usuario 2";
         localStorage.setItem('japon2_traveler1', traveler1);
         localStorage.setItem('japon2_traveler2', traveler2);
         try {
@@ -153,8 +154,8 @@ function updateTravelerLabels() {
 
 // [CAMBIO 19] Cambia los nombres y los guarda en Config (los ven todos los dispositivos)
 async function resetTravelers() {
-    if (!confirm("Ojo: los gastos ya cargados guardan el nombre de quien pagó.\nSi cambiás un nombre, esos gastos dejan de contarse en el balance.\n\n¿Querés cambiar los nombres igual?")) return;
-
+       // [CAMBIO 30] Cartel: los nombres tienen que coincidir con los de los gastos ya cargados
+    if (!confirm("Ojo: los gastos ya cargados guardan el nombre de quien pagó.\nSi cambiás un nombre, esos gastos se marcan con ⚠️ y no se cuentan en el balance.\n\nConsejo: usá siempre los mismos nombres (las mayúsculas no importan).\n\n¿Querés cambiar los nombres igual?")) return;
     const p1 = prompt("Nombre del Viajero 1:", p1Default());
     const p2 = prompt("Nombre del Viajero 2:", p2Default());
     try {
