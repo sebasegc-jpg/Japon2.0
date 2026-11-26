@@ -328,6 +328,12 @@ function renderExpenses() {
     // [CAMBIO 28] Si hay pagadores sin reconocer, se avisa en vez de mostrar una deuda que podría ser falsa
     if (unknownCount > 0) {
         pendingSheetNames = sheetNames.length === 2 ? sheetNames.slice() : [];
+                // [CAMBIO 28b] Mantener el orden Viajero 1 / Viajero 2: si los nombres quedaron al revés
+        // respecto de los viajeros actuales, se dan vuelta (para no invertir los "solo de X").
+        if (pendingSheetNames.length === 2 &&
+            (normName(pendingSheetNames[0]) === normName(p2Name) || normName(pendingSheetNames[1]) === normName(p1Name))) {
+            pendingSheetNames.reverse();
+        }
         const btn = pendingSheetNames.length === 2
             ? `<br><button onclick="adoptSheetNames()" style="margin-top:6px; background:#7c3aed; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.8rem;">Usar "${pendingSheetNames[0]}" y "${pendingSheetNames[1]}" como viajeros</button>`
             : '';
